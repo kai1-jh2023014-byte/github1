@@ -5,18 +5,22 @@
 body {
   margin: 0;
   font-family: sans-serif;
-  background: #f7f8fc;
+  background: #f5f7ff;
   color: #1b1f3b;
 }
 
 main {
-  max-width: 960px;
+  max-width: 980px;
   margin: 0 auto;
   padding: 24px;
 }
 
 h1 {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.lead {
+  margin: 0 0 16px;
 }
 
 .card {
@@ -39,8 +43,15 @@ label {
   align-items: end;
 }
 
+.inline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
 input,
 select,
+textarea,
 button {
   padding: 8px;
   border: 1px solid #c4c9de;
@@ -59,10 +70,31 @@ button.active {
   background: #1f3ca8;
 }
 
-.view-switcher {
+.view-switcher,
+.actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.sync-status {
+  font-size: 13px;
+  margin: 0 0 12px;
+  color: #4a4f73;
+}
+
+.club-days {
+  border: 1px solid #dbe0f3;
+  border-radius: 10px;
+  padding: 8px 12px 12px;
+  margin: 12px 0;
+}
+
+.club-days label {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 12px;
 }
 
 .hidden {
@@ -83,7 +115,7 @@ td {
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 8px;
 }
 
@@ -101,4 +133,23 @@ td {
 .entry-meta {
   margin: 2px 0;
   font-size: 12px;
+}
+
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.checklist li {
+  border: 1px solid #dbe0f3;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.checklist label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
 }

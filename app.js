@@ -2,6 +2,7 @@ const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
 
 const schedule = [
   {
+    className: '3組',
     day: 1,
     period: 1,
     subject: '数学',
@@ -9,6 +10,7 @@ const schedule = [
     items: ['教科書', 'ノート', '定規']
   },
   {
+    className: '3組',
     day: 2,
     period: 3,
     subject: '英語',
@@ -22,8 +24,10 @@ const tableView = document.querySelector('#table-view');
 const calendarView = document.querySelector('#calendar-view');
 const tableViewBtn = document.querySelector('#table-view-btn');
 const calendarViewBtn = document.querySelector('#calendar-view-btn');
-const checkItemsBtn = document.querySelector('#check-items-btn');
 const reminderMessage = document.querySelector('#reminder-message');
+const checklist = document.querySelector('#packing-checklist');
+const quickInputResult = document.querySelector('#quick-input-result');
+const syncStatus = document.querySelector('#sync-status');
 
 function parseItems(text) {
   return text
@@ -32,8 +36,69 @@ function parseItems(text) {
     .filter(Boolean);
 }
 
+function splitJapaneseList(text) {
+  return text
+    .split(/[、,と]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeDayFromText(text) {
+  const today = new Date().getDay();
+  if (text.includes('明日')) {
+    return (today + 1) % 7;
+  }
+  if (text.includes('今日')) {
+    return today;
+  }
+
+  const map = {
+    月: 1,
+    火: 2,
+    水: 3,
+    木: 4,
+    金: 5,
+    土: 6,
+    日: 0
+  };
+
+  for (const [key, value] of Object.entries(map)) {
+    if (text.includes(`${key}曜`)) {
+      return value;
+    }
+  }
+
+  return today;
+}
+
+function getClubDaySet() {
+  const checked = [...document.querySelectorAll('.club-day:checked')];
+  return new Set(checked.map((box) => Number(box.value)));
+}
+
+function getClubItems() {
+  return parseItems(document.querySelector('#club-items').value);
+}
+
+function upsertScheduleEntry(newEntry) {
+  const index = schedule.findIndex(
+    (entry) =>
+      entry.className === newEntry.className &&
+      entry.day === newEntry.day &&
+      entry.period === newEntry.period
+  );
+
+  if (index >= 0) {
+    schedule[index] = newEntry;
+  } else {
+    schedule.push(newEntry);
+  }
+
+  syncStatus.textContent = `同期状態: 更新済み（${new Date().toLocaleTimeString('ja-JP')}）`;
+}
+
 function createCellText(entry) {
-  const parts = [`${entry.subject}`];
+  const parts = [`${entry.className} ${entry.subject}`];
   if (entry.task) {
     parts.push(`課題: ${entry.task}`);
   }
@@ -68,9 +133,12 @@ function renderTable() {
 
     [1, 2, 3, 4, 5, 6, 0].forEach((day) => {
       const td = document.createElement('td');
-      const entry = schedule.find((item) => item.day === day && item.period === period);
-      if (entry) {
-        td.textContent = createCellText(entry);
+      const entries = schedule
+        .filter((item) => item.day === day && item.period === period)
+        .sort((a, b) => a.className.localeCompare(b.className));
+
+      if (entries.length > 0) {
+        td.textContent = entries.map(createCellText).join('\n\n');
         td.style.whiteSpace = 'pre-line';
       }
       row.appendChild(td);
@@ -122,7 +190,7 @@ function renderCalendar() {
       entries.forEach((entry) => {
         const entryTitle = document.createElement('p');
         entryTitle.className = 'entry-title';
-        entryTitle.textContent = `${entry.period}限 ${entry.subject}`;
+        entryTitle.textContent = `${entry.period}限 ${entry.className} ${entry.subject}`;
 
         const task = document.createElement('p');
         task.className = 'entry-meta';
@@ -163,80 +231,171 @@ function showCalendarView() {
   calendarViewBtn.classList.add('active');
 }
 
-function notifyMissingItems(missingItems) {
+function notify(title, body) {
   if (!('Notification' in window)) {
     return;
   }
 
-  const message = `忘れ物: ${missingItems.join('、')}`;
   if (Notification.permission === 'granted') {
-    new Notification('持ち物チェック', { body: message });
+    new Notification(title, { body });
     return;
   }
 
   if (Notification.permission === 'default') {
     Notification.requestPermission().then((permission) => {
       if (permission === 'granted') {
-        new Notification('持ち物チェック', { body: message });
+        new Notification(title, { body });
       }
     });
   }
 }
 
-function checkMissingItems() {
-  const today = new Date().getDay();
-  const todayEntries = schedule.filter((entry) => entry.day === today);
-  if (todayEntries.length === 0) {
-    reminderMessage.textContent = '今日は授業予定がありません。';
+function requiredItemsForDay(day) {
+  const lessonItems = schedule
+    .filter((entry) => entry.day === day)
+    .flatMap((entry) => entry.items);
+
+  const resultSet = new Set(lessonItems);
+  const clubDays = getClubDaySet();
+  if (clubDays.has(day)) {
+    getClubItems().forEach((item) => resultSet.add(item));
+  }
+
+  return [...resultSet];
+}
+
+function buildChecklistForDay(day) {
+  checklist.textContent = '';
+  const items = requiredItemsForDay(day);
+
+  if (items.length === 0) {
+    reminderMessage.textContent = 'この日の必要な持ち物はありません。';
     return;
   }
 
-  const packedItems = parseItems(document.querySelector('#packed-items').value);
-  const requiredItems = new Set();
-  todayEntries.forEach((entry) => {
-    entry.items.forEach((item) => requiredItems.add(item));
+  items.forEach((item) => {
+    const li = document.createElement('li');
+    const label = document.createElement('label');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.dataset.item = item;
+    const text = document.createElement('span');
+    text.textContent = `${item} をカバンに入れた`;
+
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    li.appendChild(label);
+    checklist.appendChild(li);
   });
 
-  const missingItems = [...requiredItems].filter((item) => !packedItems.includes(item));
+  reminderMessage.textContent = 'チェックリストを作成しました。';
+}
 
-  if (missingItems.length === 0) {
-    reminderMessage.textContent = '忘れ物はありません。';
+function sendNightReminder() {
+  const tomorrow = (new Date().getDay() + 1) % 7;
+  const items = requiredItemsForDay(tomorrow);
+
+  if (items.length === 0) {
+    reminderMessage.textContent = '明日の持ち物は登録されていません。';
     return;
   }
 
-  reminderMessage.textContent = `忘れ物の可能性: ${missingItems.join('、')}`;
-  notifyMissingItems(missingItems);
+  const message = `明日の持ち物: ${items.join('、')}`;
+  reminderMessage.textContent = `前夜通知: ${message}`;
+  notify('時卓 前夜パッキング通知', message);
+}
+
+function sendMorningReminder() {
+  const unchecked = [...checklist.querySelectorAll('input[type="checkbox"]:not(:checked)')].map(
+    (box) => box.dataset.item
+  );
+
+  if (unchecked.length === 0) {
+    reminderMessage.textContent = '全てチェック済みです。忘れ物はありません。';
+    return;
+  }
+
+  const message = `未チェック: ${unchecked.join('、')}`;
+  reminderMessage.textContent = `翌朝再通知: ${message}`;
+  notify('時卓 忘れ物再確認', message);
+}
+
+function extractByRegex(text, regex) {
+  const match = text.match(regex);
+  return match ? match[1].trim() : '';
+}
+
+function parseQuickInput(text) {
+  const className = extractByRegex(text, /(\d組)/) || '3組';
+  const period = Number(extractByRegex(text, /(\d)限/)) || 1;
+  const day = normalizeDayFromText(text);
+
+  const subject =
+    extractByRegex(text, /組の(.+?)は/) || extractByRegex(text, /は(.+?)で/) || '未設定科目';
+
+  const task =
+    extractByRegex(text, /(ワーク[^、。と\n]*)/) ||
+    extractByRegex(text, /課題[：: ]*([^、。\n]+)/) ||
+    '';
+
+  const itemsText =
+    extractByRegex(text, /(?:と|、)(.+?)を持ってきて/) || extractByRegex(text, /持ち物[：: ]*([^。\n]+)/);
+
+  const items = splitJapaneseList(itemsText || '').filter((item) => item !== task);
+
+  return {
+    className,
+    day,
+    period,
+    subject,
+    task,
+    items
+  };
 }
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
 
-  const day = Number(document.querySelector('#day').value);
-  const period = Number(document.querySelector('#period').value);
-  const subject = document.querySelector('#subject').value.trim();
-  const task = document.querySelector('#task').value.trim();
-  const items = parseItems(document.querySelector('#items').value);
+  const newEntry = {
+    className: document.querySelector('#class-name').value,
+    day: Number(document.querySelector('#day').value),
+    period: Number(document.querySelector('#period').value),
+    subject: document.querySelector('#subject').value.trim(),
+    task: document.querySelector('#task').value.trim(),
+    items: parseItems(document.querySelector('#items').value)
+  };
 
-  if (!subject || !Number.isInteger(period) || period < 1 || period > 8) {
+  if (!newEntry.subject || !Number.isInteger(newEntry.period) || newEntry.period < 1 || newEntry.period > 8) {
     return;
   }
 
-  const existingIndex = schedule.findIndex((item) => item.day === day && item.period === period);
-  const newEntry = { day, period, subject, task, items };
-
-  if (existingIndex >= 0) {
-    schedule[existingIndex] = newEntry;
-  } else {
-    schedule.push(newEntry);
-  }
-
+  upsertScheduleEntry(newEntry);
   form.reset();
   render();
+  quickInputResult.textContent = '手動登録しました。';
 });
+
+document.querySelector('#quick-input-btn').addEventListener('click', () => {
+  const text = document.querySelector('#quick-input-text').value.trim();
+  if (!text) {
+    return;
+  }
+
+  const parsed = parseQuickInput(text);
+  upsertScheduleEntry(parsed);
+  render();
+
+  quickInputResult.textContent = `AI仕分け登録: ${dayNames[parsed.day]} ${parsed.period}限 / ${parsed.className} / ${parsed.subject}`;
+});
+
+document.querySelector('#build-checklist-btn').addEventListener('click', () => {
+  buildChecklistForDay(new Date().getDay());
+});
+document.querySelector('#night-reminder-btn').addEventListener('click', sendNightReminder);
+document.querySelector('#morning-reminder-btn').addEventListener('click', sendMorningReminder);
 
 tableViewBtn.addEventListener('click', showTableView);
 calendarViewBtn.addEventListener('click', showCalendarView);
-checkItemsBtn.addEventListener('click', checkMissingItems);
 
 render();
 showTableView();

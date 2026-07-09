@@ -3,16 +3,68 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>詳細時間割アプリ</title>
+    <title>時卓 -JiTaku-（試作版）</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <main>
-      <h1>詳細時間割アプリ</h1>
+      <h1>時卓 -JiTaku-（試作版）</h1>
+      <p class="lead">
+        時間割・課題・持ち物を1画面で管理し、忘れ物防止リマインドを行う試作版です。
+      </p>
 
       <section class="card">
-        <h2>予定追加</h2>
+        <h2>① アジャイル時間割・カレンダー</h2>
+        <div class="view-switcher">
+          <button id="table-view-btn" class="active" type="button">表形式</button>
+          <button id="calendar-view-btn" type="button">カレンダー形式</button>
+        </div>
+        <p id="sync-status" class="sync-status">同期状態: 初期表示</p>
+        <div id="table-view"></div>
+        <div id="calendar-view" class="hidden"></div>
+      </section>
+
+      <section class="card">
+        <h2>② 忘れ物ゼロ！お節介リマインダー（生徒）</h2>
+        <div class="inline-grid">
+          <label>
+            部活の持ち物（カンマ区切り）
+            <input id="club-items" type="text" placeholder="例: スパイク, 楽譜" />
+          </label>
+        </div>
+
+        <fieldset class="club-days">
+          <legend>部活がある曜日</legend>
+          <label><input type="checkbox" class="club-day" value="1" />月</label>
+          <label><input type="checkbox" class="club-day" value="2" />火</label>
+          <label><input type="checkbox" class="club-day" value="3" />水</label>
+          <label><input type="checkbox" class="club-day" value="4" />木</label>
+          <label><input type="checkbox" class="club-day" value="5" />金</label>
+          <label><input type="checkbox" class="club-day" value="6" />土</label>
+          <label><input type="checkbox" class="club-day" value="0" />日</label>
+        </fieldset>
+
+        <div class="actions">
+          <button id="build-checklist-btn" type="button">今日のチェックリストを作成</button>
+          <button id="night-reminder-btn" type="button">前夜通知（試作）</button>
+          <button id="morning-reminder-btn" type="button">翌朝再通知（試作）</button>
+        </div>
+
+        <ul id="packing-checklist" class="checklist"></ul>
+        <p id="reminder-message" aria-live="polite"></p>
+      </section>
+
+      <section class="card">
+        <h2>③ 持ち物・課題クイック入力（教員）</h2>
         <form id="schedule-form">
+          <label>
+            対象クラス
+            <select id="class-name" required>
+              <option value="1組">1組</option>
+              <option value="2組">2組</option>
+              <option value="3組" selected>3組</option>
+            </select>
+          </label>
           <label>
             曜日
             <select id="day" required>
@@ -41,27 +93,23 @@
             必要なもの（カンマ区切り）
             <input id="items" type="text" placeholder="例: 教科書, ノート, 筆記用具" />
           </label>
-          <button type="submit">追加</button>
+          <button type="submit">手動登録</button>
         </form>
-      </section>
 
-      <section class="card">
-        <div class="view-switcher">
-          <button id="table-view-btn" class="active" type="button">表形式</button>
-          <button id="calendar-view-btn" type="button">カレンダー形式</button>
-        </div>
-        <div id="table-view"></div>
-        <div id="calendar-view" class="hidden"></div>
-      </section>
+        <hr />
 
-      <section class="card">
-        <h2>忘れ物チェック（今日）</h2>
         <label>
-          持っているもの（カンマ区切り）
-          <input id="packed-items" type="text" placeholder="例: 教科書, 筆記用具" />
+          音声文字起こし想定テキスト（試作）
+          <textarea
+            id="quick-input-text"
+            rows="3"
+            placeholder="例: 明日の3組の英語は、ワーク25ページと辞書を持ってきてください"
+          ></textarea>
         </label>
-        <button id="check-items-btn" type="button">忘れ物がないか確認</button>
-        <p id="reminder-message" aria-live="polite"></p>
+        <div class="actions">
+          <button id="quick-input-btn" type="button">AI仕分けで登録（試作）</button>
+        </div>
+        <p id="quick-input-result" aria-live="polite"></p>
       </section>
     </main>
 
