@@ -43,6 +43,35 @@ Hold (even strict penalty) stayed below 2-ply (13.8 / 35.8 lines). Latency p95 ~
 
 - **ACT:** **PASS.** Final: BeamSearch depth 3, width 12, hold **off** (implemented, measured weaker), T-spin/REN/B2B weights **on**, root-complete first ply. Browser default is this config. 1-PLY / 2-PLY remain.
 
+## Phase 2 — Gated Hold + Well/I (this cycle)
+
+Details and tables: [docs/research/phase2-ab.md](research/phase2-ab.md).
+
+### Cycle 1 — Gated Hold
+
+- **PLAN:** Unconditional Hold loses lines. A board-feature gate (I-save / well-ready) might not.
+- **DO:** `shouldExploreHold` — tetris well + I availability only. No expert-move cloning.
+- **CHECK:** vs frozen 3×12. 5×40 tie 15.00/3704. 5×100 score 15521 → 15554. 10×100 score 15617 → 15633. Holds 0.10/game. p95 ~32 ms.
+- **ACT:** **PASS — KEEP.**
+
+### Cycle 2 — Well / I reservation
+
+- **PLAN:** Evaluator penalizes all wells, so Beam fills a 1-wide well for a single.
+- **DO:** Leaf `wellReservationScore` (depth 4–6 peak, I in hold/next, partial wells-penalty offset).
+- **CHECK:** On top of gated Hold. 10×100 lines 38.80 → **38.90**, score 15617 → **15722**. p95 37 ms.
+- **ACT:** **PASS — KEEP.** Adopted as live default with gated Hold.
+
+### Cycle 3 — Surface / overhang
+
+- **PLAN:** Bumpiness is adjacent-column only.
+- **DO:** Overhang count on covered adjacent empties, −0.14 each.
+- **CHECK:** 5×40 score 3704 → 3623. 10×100 lines 38.80 → 38.70, score 15617 → 14803.
+- **ACT:** **FAIL — REVERT.**
+
+### Adopted
+
+Gated Hold ON, well/I ON, overhang OFF, unconditional Hold OFF, `DEFAULT_WEIGHTS` unchanged.
+
 ## Regression
 
 `npm test` / `npm run build` / AI PLAYING path through `GameEngine.input()`.

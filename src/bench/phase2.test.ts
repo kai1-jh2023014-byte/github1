@@ -17,6 +17,9 @@ const RUN =
 describe("Phase 2 flags", () => {
   it("keeps unconditional Hold off on the live default", () => {
     expect(DEFAULT_BEAM.useHold).toBe(false);
+    expect(DEFAULT_BEAM.useGatedHold).toBe(true);
+    expect(DEFAULT_BEAM.wellReservation).toBe(true);
+    expect(DEFAULT_BEAM.surfaceOverhang).toBe(false);
     expect(DEFAULT_BEAM.depth).toBe(3);
     expect(DEFAULT_BEAM.beamWidth).toBe(12);
   });

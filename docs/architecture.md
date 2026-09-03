@@ -35,9 +35,9 @@ GameEngine.input()
 ## Search
 
 - **PlySearch** — frozen 1-ply / 2-ply baseline (`findBestMove`). Does not hold. `DEFAULT_WEIGHTS` are unchanged.
-- **BeamSearch** — root-complete first ply (so depth 2 matches 2-ply), then top-K at deeper plies. Hold is a search branch (optional, default off). Spin placements feed T-spin detection.
+- **BeamSearch** — root-complete first ply (so depth 2 matches 2-ply), then top-K at deeper plies. Unconditional Hold is off. **Gated Hold** opens a Hold branch only for I-save / tetris-well cases. Leaf eval adds a tetris-well / I-reservation term. Surface/overhang was A/B’d and reverted.
 
-Default live search: Beam depth 3, width 12, hold off, mechanics weights on.
+Default live search: Beam depth 3, width 12, gated Hold on, well/I reservation on, mechanics weights on.
 
 ## Candidate evaluation
 

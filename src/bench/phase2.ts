@@ -20,6 +20,18 @@ export const FROZEN_SPEC: SearchSpec = {
   mechanicsWeights: DEFAULT_MECHANICS,
 };
 
+export const ADOPTED_SPEC: SearchSpec = {
+  name: "adopted-gated-hold-well",
+  algorithm: "beam",
+  depth: 3,
+  beamWidth: 12,
+  useHold: false,
+  useGatedHold: true,
+  wellReservation: true,
+  surfaceOverhang: false,
+  mechanicsWeights: DEFAULT_MECHANICS,
+};
+
 export function gatedHoldSpec(base: SearchSpec = FROZEN_SPEC): SearchSpec {
   return { ...base, name: "B-gated-hold", useGatedHold: true, useHold: false };
 }

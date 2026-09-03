@@ -12,6 +12,7 @@ import { classifyGap } from "./classify";
 import { analyzeFixture, roundTripVideo, writeAnalysisArtifacts } from "./analyze";
 import { applyAction, emptyPlayingState } from "./state";
 import { chooseExpertAction } from "./expert";
+import { writePhase2Report } from "./phase2Replay";
 
 describe("Phase 1 expert replay research", () => {
   it("does not drift the frozen Beam 3×12 baseline", () => {
@@ -86,6 +87,16 @@ describe("Phase 1 expert replay research", () => {
       expect(result.hypotheses.length).toBeLessThanOrEqual(10);
       writeAnalysisArtifacts(result, "docs/research");
       expect(result.dataset.meanConfidence.board).toBe(1);
+    },
+    120_000,
+  );
+
+  it(
+    "writes Phase 2 expert-replay comparison without using it as the adoption target",
+    () => {
+      const cmp = writePhase2Report("docs/research");
+      expect(cmp.frozen.agreement.compared).toBe(64);
+      expect(cmp.adopted.agreement.compared).toBe(64);
     },
     120_000,
   );
