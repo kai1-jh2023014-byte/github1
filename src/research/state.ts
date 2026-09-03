@@ -29,7 +29,7 @@ export function emptyPlayingState(queue: TetrominoType[]): TetrisGameState {
   return {
     board: createBoard(),
     current: current ? createPiece(current) : null,
-    nextPieces: rest.slice(0, 5),
+    nextPieces: rest,
     holdPiece: null,
     canHold: true,
     combo: 0,
@@ -125,9 +125,12 @@ export function placementKey(p: Pick<Placement, "rotation" | "x" | "y" | "hold">
 }
 
 export function samePlacement(
-  a: Pick<Placement, "rotation" | "x" | "hold"> | null,
-  b: Pick<Placement, "rotation" | "x" | "hold"> | null,
+  a: Pick<Placement, "rotation" | "x" | "y" | "hold"> | null,
+  b: Pick<Placement, "rotation" | "x" | "y" | "hold"> | null,
 ): boolean {
   if (!a || !b) return false;
-  return Boolean(a.hold) === Boolean(b.hold) && a.rotation === b.rotation && a.x === b.x;
+  if (Boolean(a.hold) !== Boolean(b.hold)) return false;
+  if (a.rotation !== b.rotation || a.x !== b.x) return false;
+  if (a.y !== undefined && b.y !== undefined) return a.y === b.y;
+  return true;
 }

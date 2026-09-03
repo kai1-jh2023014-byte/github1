@@ -76,7 +76,7 @@ describe("Phase 1 expert replay research", () => {
     () => {
       const result = analyzeFixture({
         seed: 1,
-        pieces: 48,
+        pieces: 64,
         source:
           "guideline-expert fixture (no source mp4 in workspace; renderer ground truth, confidence=1)",
       });

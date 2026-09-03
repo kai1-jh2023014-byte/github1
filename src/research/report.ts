@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { AgreementStats, BehaviorStats, DatasetStats, DecisionGap, GapCategory } from "./types";
+import { boardSketch } from "./shape";
 
 const CATEGORIES: GapCategory[] = [
   "immediate_line_clear",
@@ -130,8 +131,8 @@ ${a.examples
 - Timestamp / piece index: ${ex.step.timestamp}
 - Current: \`${ex.step.stateBefore.current?.type ?? "?"}\`  Hold: \`${ex.step.stateBefore.holdPiece ?? "empty"}\`  canHold: ${ex.step.stateBefore.canHold}
 - Combo / B2B before: ${ex.step.stateBefore.combo} / ${ex.step.stateBefore.backToBack}
-- Human: spawn=${ex.step.human.spawn} hold=${ex.step.human.hold} rot=${ex.step.human.rotation} x=${ex.step.human.x} y=${ex.step.human.y} hardDrop=${ex.step.human.hardDrop} clears=${ex.step.human.linesCleared} tspin=${ex.step.human.tSpin} comboAfter=${ex.step.human.comboAfter} b2bAfter=${ex.step.human.b2bAfter}
-- AI: hold=${ex.ranked.aiPlacement?.hold ?? false} rot=${ex.ranked.aiPlacement?.rotation ?? "—"} x=${ex.ranked.aiPlacement?.x ?? "—"}
+- Human: spawn=${ex.step.human.spawn} hold=${ex.step.human.hold} placed=${ex.step.human.pieceType} rot=${ex.step.human.rotation} x=${ex.step.human.x} y=${ex.step.human.y} hardDrop=${ex.step.human.hardDrop} clears=${ex.step.human.linesCleared} tspin=${ex.step.human.tSpin} comboAfter=${ex.step.human.comboAfter} b2bAfter=${ex.step.human.b2bAfter}
+- AI: hold=${ex.ranked.aiPlacement?.hold ?? false} rot=${ex.ranked.aiPlacement?.rotation ?? "—"} x=${ex.ranked.aiPlacement?.x ?? "—"} y=${ex.ranked.aiPlacement?.y ?? "—"}
 - Human rank in Beam list: ${ex.ranked.rank ?? "outside"}
 - Beam score (AI choice / human choice): ${ex.ranked.aiScore.toFixed(3)} / ${ex.ranked.humanScore?.toFixed(3) ?? "n/a"}
 - Human holes/height/well-relevant maxHeight: ${ex.humanFeatures.holes} / ${ex.humanFeatures.aggregateHeight} / ${ex.humanFeatures.maxHeight}
@@ -139,6 +140,12 @@ ${a.examples
 - Likely missing feature: ${ex.missingFeature}
 - Classification confidence: ${ex.confidence.toFixed(2)}
 - Reconstruction confidence (board/action): ${ex.step.confidence.board.toFixed(2)} / ${ex.step.confidence.action.toFixed(2)}
+
+Board after human (bottom 8 rows, \`#\` = filled):
+
+\`\`\`
+${boardSketch(ex.step.stateAfter.board)}
+\`\`\`
 `,
     )
     .join("\n")}
@@ -288,11 +295,15 @@ export function buildHypotheses(gaps: DecisionGap[], agreement: AgreementStats):
 
   const picked: Hypothesis[] = [];
   for (const row of ranked) {
+    if (row.c === "unknown") continue;
     if (row.n === 0 && row.c !== "hold") continue;
     const h = catalog[row.c];
     if (!h.observed) continue;
     picked.push({ ...h, rank: picked.length + 1 });
-    if (picked.length >= 10) break;
+    if (picked.length >= 9) break;
+  }
+  if ((counts.unknown ?? 0) > 0 && picked.length < 10) {
+    picked.push({ ...catalog.unknown, rank: picked.length + 1 });
   }
   return picked;
 }

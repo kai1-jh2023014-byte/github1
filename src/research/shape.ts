@@ -41,3 +41,13 @@ export function filledWellColumn(
   const heightsAfter = columnHeights(after);
   return heightsAfter[well.col] > heightsBefore[well.col];
 }
+
+export function boardSketch(board: Board, rows = 8): string {
+  const lines: string[] = [];
+  for (let y = 20 - rows; y < 20; y++) {
+    let row = "";
+    for (let x = 0; x < 10; x++) row += board[y][x] ? "#" : ".";
+    lines.push(row);
+  }
+  return lines.join("\n");
+}
