@@ -72,6 +72,30 @@ Details and tables: [docs/research/phase2-ab.md](research/phase2-ab.md).
 
 Gated Hold ON, well/I ON, overhang OFF, unconditional Hold OFF, `DEFAULT_WEIGHTS` unchanged.
 
+## Phase 3 — Future setup leaf eval
+
+Details: [docs/research/phase3-future-setup.md](research/phase3-future-setup.md).
+
+### Cycle 1 — Future setup (step histogram)
+
+- **PLAN:** 1-step/2-step benches, jagged-cliff penalty, tetris-well edge excluded.
+- **CHECK:** 5×40 all weights 14.80 vs frozen 15.00. Activation ~1600/decision.
+- **ACT:** **FAIL — REVERT.**
+
+### Cycle 2 — T-spin setup (3-corner notch)
+
+- **PLAN:** Small T-slot bonus; Phase 1 had no T-spin-setup evidence.
+- **CHECK:** small tied 5×40 then 10×100 38.70 / 15108 vs 38.90 / 15722. p95 > 50. tSpins 0.
+- **ACT:** **FAIL — REVERT.**
+
+### Cycle 3 — Future line-clear (almost-full rows)
+
+- **PLAN:** 8/9-fill rows excluding well column.
+- **CHECK:** 5×40 14.80, p95 ≥ 50.
+- **ACT:** **FAIL — REVERT.**
+
+Live default unchanged from Phase 2.
+
 ## Regression
 
 `npm test` / `npm run build` / AI PLAYING path through `GameEngine.input()`.

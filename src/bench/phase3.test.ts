@@ -30,6 +30,13 @@ describe("Phase 3 flags", () => {
     expect(DEFAULT_BEAM.useHold).toBe(false);
     expect(DEFAULT_BEAM.useGatedHold).toBe(true);
     expect(DEFAULT_BEAM.wellReservation).toBe(true);
+    expect(DEFAULT_BEAM.futureSetup).toBe(false);
+    expect(DEFAULT_BEAM.tspinSetup).toBe(false);
+    expect(DEFAULT_BEAM.futureClear).toBe(false);
+    expect(PHASE3_FROZEN.futureSetup).toBe(false);
+    expect(PHASE3_FROZEN.tspinSetup).toBe(false);
+    expect(PHASE3_FROZEN.futureClear).toBe(false);
+    expect(PHASE3_FROZEN.wellReservation).toBe(true);
   });
 });
 
