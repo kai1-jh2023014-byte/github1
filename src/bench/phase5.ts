@@ -367,8 +367,12 @@ export function classifyWidthSensitivity(
       summary: "Wider beam improved 10×100 lines and score — recommend narrowly scoped width-16 experiment (do not auto-adopt).",
     };
   }
-  if (saturated) {
-    return { case: "B", summary: "12→16→32 shows little real-game gain — beam width is not the primary bottleneck." };
+  if (saturated || (long16 && long16.averageScore < long12.averageScore - 1e-9)) {
+    return {
+      case: "B",
+      summary:
+        "12→16→32 does not improve 10×100 lines/score — beam width is not the primary bottleneck.",
+    };
   }
   return { case: "mixed", summary: "No clear Case A/B/C/D — see tables." };
 }

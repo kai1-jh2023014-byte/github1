@@ -122,6 +122,12 @@ Hinge-at-parent terms (not absolute histograms). Parent well/holes/heights cache
 
 Live default unchanged from Phase 2/3.
 
+## Phase 5-A — Beam width diagnostic
+
+Details: [docs/research/phase5-beam-width.md](research/phase5-beam-width.md).
+
+Widths 4–32 vs frozen live config. **Case B — width saturation.** Width 12 has best 10×100 score (15722); wider beams do not improve real games. Production `beamWidth=12` unchanged.
+
 ## Regression
 
 `npm test` / `npm run build` / AI PLAYING path through `GameEngine.input()`.
