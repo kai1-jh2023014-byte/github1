@@ -33,6 +33,9 @@ describe("Phase 3 flags", () => {
     expect(DEFAULT_BEAM.futureSetup).toBe(false);
     expect(DEFAULT_BEAM.tspinSetup).toBe(false);
     expect(DEFAULT_BEAM.futureClear).toBe(false);
+    expect(DEFAULT_BEAM.wellDelta).toBe(false);
+    expect(DEFAULT_BEAM.holeDelta).toBe(false);
+    expect(DEFAULT_BEAM.surfaceDelta).toBe(false);
     expect(PHASE3_FROZEN.futureSetup).toBe(false);
     expect(PHASE3_FROZEN.tspinSetup).toBe(false);
     expect(PHASE3_FROZEN.futureClear).toBe(false);

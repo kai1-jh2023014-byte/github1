@@ -96,6 +96,32 @@ Details: [docs/research/phase3-future-setup.md](research/phase3-future-setup.md)
 
 Live default unchanged from Phase 2.
 
+## Phase 4 — Parent-delta leaf eval
+
+Details: [docs/research/phase4-parent-delta.md](research/phase4-parent-delta.md).
+
+Hinge-at-parent terms (not absolute histograms). Parent well/holes/heights cached. p95 stayed ~33 ms.
+
+### Cycle 1 — Well Delta
+
+- **PLAN:** Destroy vs create of tetris-well shape quality; skip tetris fills; no unbounded depth.
+- **CHECK:** medium 5×40 15.00/3724 then 10×100 38.80 / 15679 vs 38.90 / 15722.
+- **ACT:** **FAIL — REVERT.**
+
+### Cycle 2 — Hole Delta
+
+- **PLAN:** Extra penalty for hole-count increase only.
+- **CHECK:** small tied 5×40 then 10×100 score 15205 vs 15722. Active share 74%.
+- **ACT:** **FAIL — REVERT.**
+
+### Cycle 3 — Surface Damage Delta
+
+- **PLAN:** New adjacent cliffs only; well edges excluded.
+- **CHECK:** large 5×40 15.00/3726 then 10×100 38.60 / 14634. Active share 92%.
+- **ACT:** **FAIL — REVERT.**
+
+Live default unchanged from Phase 2/3.
+
 ## Regression
 
 `npm test` / `npm run build` / AI PLAYING path through `GameEngine.input()`.
