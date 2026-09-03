@@ -25,6 +25,9 @@ export function frozenSearchContext(): SearchContext {
     useGatedHold: false,
     wellReservation: false,
     surfaceOverhang: false,
+    futureSetup: false,
+    tspinSetup: false,
+    futureClear: false,
   };
 }
 

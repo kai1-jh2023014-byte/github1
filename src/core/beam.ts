@@ -5,6 +5,14 @@ import { generateMoves, generateMovesWithSpins } from "../ai/moveGenerator";
 import { evaluateBoard, mechanicsScore } from "../ai/evaluator";
 import { shouldExploreHold } from "../ai/holdGate";
 import { overhangScore, wellReservationScore } from "../ai/structure";
+import {
+  ZERO_FUTURE,
+  computeFutureFeatures,
+  emptyActivations,
+  scoreFuture,
+  type FutureActivations,
+  type FutureWeights,
+} from "../ai/future";
 import type { EvalWeights, Placement, ScoredCandidate, SearchResult } from "../ai/types";
 import { DEFAULT_MECHANICS, ZERO_MECHANICS } from "../ai/weights";
 import type { MechanicsWeights } from "../ai/weights";
@@ -21,6 +29,10 @@ export interface BeamConfig {
   useGatedHold: boolean;
   wellReservation: boolean;
   surfaceOverhang: boolean;
+  futureSetup: boolean;
+  tspinSetup: boolean;
+  futureClear: boolean;
+  futureWeights: FutureWeights;
   useSpins: boolean;
   holdAtRootOnly: boolean;
   mechanics: MechanicsWeights;
@@ -33,6 +45,10 @@ export const DEFAULT_BEAM: BeamConfig = {
   useGatedHold: true,
   wellReservation: true,
   surfaceOverhang: false,
+  futureSetup: false,
+  tspinSetup: false,
+  futureClear: false,
+  futureWeights: ZERO_FUTURE,
   useSpins: true,
   holdAtRootOnly: true,
   mechanics: DEFAULT_MECHANICS,
@@ -71,12 +87,17 @@ export class BeamSearch implements SearchAlgorithm {
       useGatedHold: context.useGatedHold ?? this.config.useGatedHold,
       wellReservation: context.wellReservation ?? this.config.wellReservation,
       surfaceOverhang: context.surfaceOverhang ?? this.config.surfaceOverhang,
+      futureSetup: context.futureSetup ?? this.config.futureSetup,
+      tspinSetup: context.tspinSetup ?? this.config.tspinSetup,
+      futureClear: context.futureClear ?? this.config.futureClear,
+      futureWeights: context.futureWeights ?? this.config.futureWeights,
       useSpins: this.config.useSpins,
       holdAtRootOnly: context.holdAtRootOnly ?? this.config.holdAtRootOnly,
       mechanics: context.mechanicsWeights ?? this.config.mechanics ?? ZERO_MECHANICS,
     };
     const weights = context.weights;
     let nodes = 0;
+    const activations = emptyActivations();
 
     const origin: Node = {
       board: state.board,
@@ -93,7 +114,7 @@ export class BeamSearch implements SearchAlgorithm {
       features: evaluateBoard(state.board, 0, weights).features,
     };
 
-    const first = expand(origin, cfg, weights, true);
+    const first = expand(origin, cfg, weights, true, activations);
     nodes += first.nodes;
     const firstSorted = first.children.sort((a, b) => b.score - a.score);
     // Keep every root placement for the first deeper expand so depth 2
@@ -104,7 +125,7 @@ export class BeamSearch implements SearchAlgorithm {
       const next: Node[] = [];
       const seen = new Set<string>();
       for (const node of beam) {
-        const expanded = expand(node, cfg, weights, false);
+        const expanded = expand(node, cfg, weights, false, activations);
         nodes += expanded.nodes;
         for (const child of expanded.children) {
           const key = stateKey(child);
@@ -140,6 +161,7 @@ export class BeamSearch implements SearchAlgorithm {
       elapsedMs: nowMs() - started,
       depth: cfg.depth,
       nodes,
+      activations,
     };
     return (context.strategy ?? new IdentityStrategy()).rerank(raw, state);
   }
@@ -150,6 +172,7 @@ function expand(
   cfg: BeamConfig,
   weights: EvalWeights,
   isRoot: boolean,
+  activations: FutureActivations,
 ): { children: Node[]; nodes: number } {
   if (!node.current) return { children: [], nodes: 0 };
   const children: Node[] = [];
@@ -188,6 +211,17 @@ function expand(
       }
       if (cfg.surfaceOverhang) {
         structure += overhangScore(placed.board);
+      }
+      if (cfg.futureSetup || cfg.tspinSetup || cfg.futureClear) {
+        const future = scoreFuture(computeFutureFeatures(placed.board), cfg.futureWeights, {
+          setup: cfg.futureSetup,
+          tspin: cfg.tspinSetup,
+          clear: cfg.futureClear,
+        });
+        structure += future.score;
+        activations.setup += future.activations.setup;
+        activations.tspin += future.activations.tspin;
+        activations.clear += future.activations.clear;
       }
       children.push({
         board: placed.board,
@@ -256,6 +290,7 @@ function emptyResult(depth: number): SearchResult {
     elapsedMs: 0,
     depth,
     nodes: 0,
+    activations: emptyActivations(),
   };
 }
 

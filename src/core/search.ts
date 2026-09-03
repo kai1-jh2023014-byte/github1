@@ -1,6 +1,7 @@
 import { findBestMove } from "../ai/search";
 import type { EvalWeights, SearchResult } from "../ai/types";
 import type { MechanicsWeights } from "../ai/weights";
+import type { FutureWeights } from "../ai/future";
 import type { TetrisGameState } from "./state";
 import type { Strategy } from "./strategy";
 import { IdentityStrategy } from "./strategy";
@@ -17,6 +18,10 @@ export interface SearchContext {
   useGatedHold?: boolean;
   wellReservation?: boolean;
   surfaceOverhang?: boolean;
+  futureSetup?: boolean;
+  tspinSetup?: boolean;
+  futureClear?: boolean;
+  futureWeights?: FutureWeights;
 }
 
 export interface SearchAlgorithm {

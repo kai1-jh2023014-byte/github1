@@ -3,6 +3,7 @@ export type { MechanicsWeights } from "./weights";
 export { computeFeatures, evaluateBoard, scoreFeatures } from "./evaluator";
 export { shouldExploreHold } from "./holdGate";
 export { findTetrisWell, wellReservationScore, overhangScore } from "./structure";
+export { computeFutureFeatures, scoreFuture, SETUP_MEDIUM } from "./future";
 export { generateMoves, generateMovesWithSpins } from "./moveGenerator";
 export { findBestMove } from "./search";
 export { AIPlayer } from "./player";

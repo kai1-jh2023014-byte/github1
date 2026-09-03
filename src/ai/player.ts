@@ -1,6 +1,7 @@
 import { DEFAULT_WEIGHTS, DEFAULT_MECHANICS, ZERO_MECHANICS } from "./weights";
 import type { EvalWeights, SearchResult } from "./types";
 import type { MechanicsWeights } from "./weights";
+import type { FutureWeights } from "./future";
 import type { TetrisGameAdapter } from "../core/adapters";
 import { ControlLoop } from "../core/loop";
 import { TetrisAICore } from "../core/ai";
@@ -22,6 +23,10 @@ export interface AIPlayerOptions {
   useGatedHold?: boolean;
   wellReservation?: boolean;
   surfaceOverhang?: boolean;
+  futureSetup?: boolean;
+  tspinSetup?: boolean;
+  futureClear?: boolean;
+  futureWeights?: FutureWeights;
 }
 
 export class AIPlayer {
@@ -37,6 +42,10 @@ export class AIPlayer {
   useGatedHold: boolean;
   wellReservation: boolean;
   surfaceOverhang: boolean;
+  futureSetup: boolean;
+  tspinSetup: boolean;
+  futureClear: boolean;
+  futureWeights: FutureWeights;
 
   private enabled = false;
   private readonly context: SearchContext;
@@ -59,6 +68,10 @@ export class AIPlayer {
       options.wellReservation ?? (this.algorithm === "beam" ? DEFAULT_BEAM.wellReservation : false);
     this.surfaceOverhang =
       options.surfaceOverhang ?? (this.algorithm === "beam" ? DEFAULT_BEAM.surfaceOverhang : false);
+    this.futureSetup = options.futureSetup ?? (this.algorithm === "beam" ? DEFAULT_BEAM.futureSetup : false);
+    this.tspinSetup = options.tspinSetup ?? (this.algorithm === "beam" ? DEFAULT_BEAM.tspinSetup : false);
+    this.futureClear = options.futureClear ?? (this.algorithm === "beam" ? DEFAULT_BEAM.futureClear : false);
+    this.futureWeights = options.futureWeights ?? DEFAULT_BEAM.futureWeights;
     this.context = {
       weights: this.weights,
       depth: this.depth,
@@ -70,6 +83,10 @@ export class AIPlayer {
       useGatedHold: this.useGatedHold,
       wellReservation: this.wellReservation,
       surfaceOverhang: this.surfaceOverhang,
+      futureSetup: this.futureSetup,
+      tspinSetup: this.tspinSetup,
+      futureClear: this.futureClear,
+      futureWeights: this.futureWeights,
     };
     this.core = new TetrisAICore(createSearch(this.algorithm));
     this.loop = new ControlLoop(
@@ -110,6 +127,10 @@ export class AIPlayer {
     this.context.useGatedHold = this.useGatedHold;
     this.context.wellReservation = this.wellReservation;
     this.context.surfaceOverhang = this.surfaceOverhang;
+    this.context.futureSetup = this.futureSetup;
+    this.context.tspinSetup = this.tspinSetup;
+    this.context.futureClear = this.futureClear;
+    this.context.futureWeights = this.futureWeights;
     this.loop.tick(now, this.enabled, adapter);
   }
 }

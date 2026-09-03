@@ -45,6 +45,7 @@ export interface SearchResult {
   elapsedMs: number;
   depth: SearchDepth;
   nodes: number;
+  activations?: { setup: number; tspin: number; clear: number };
 }
 
 export const FEATURE_KEYS: (keyof EvalFeatures)[] = [

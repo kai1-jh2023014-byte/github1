@@ -2,6 +2,7 @@ import { BrowserGameAdapter } from "../adapters/browser";
 import { AIPlayer } from "../ai/player";
 import type { SearchDepth } from "../ai/types";
 import type { MechanicsWeights } from "../ai/weights";
+import type { FutureWeights } from "../ai/future";
 import { ZERO_MECHANICS } from "../ai/weights";
 import { GameEngine } from "../game/engine";
 import { seededRandomizer } from "../game/seeded";
@@ -17,6 +18,10 @@ export interface SearchSpec {
   useGatedHold?: boolean;
   wellReservation?: boolean;
   surfaceOverhang?: boolean;
+  futureSetup?: boolean;
+  tspinSetup?: boolean;
+  futureClear?: boolean;
+  futureWeights?: FutureWeights;
 }
 
 export interface GameMetrics {
@@ -38,6 +43,9 @@ export interface GameMetrics {
   decisions: number;
   latencies: number[];
   nodes: number;
+  activationsSetup: number;
+  activationsTspin: number;
+  activationsClear: number;
 }
 
 export interface BenchmarkSummary {
@@ -62,6 +70,9 @@ export interface BenchmarkSummary {
   averageMaxCombo: number;
   averageB2B: number;
   averagePC: number;
+  averageActivationsSetup: number;
+  averageActivationsTspin: number;
+  averageActivationsClear: number;
   results: GameMetrics[];
 }
 
@@ -91,6 +102,9 @@ export function runGame(options: RunGameOptions): GameMetrics {
   const adapter = new BrowserGameAdapter(engine);
   const latencies: number[] = [];
   let nodes = 0;
+  let activationsSetup = 0;
+  let activationsTspin = 0;
+  let activationsClear = 0;
   const ai = new AIPlayer({
     depth: spec.depth,
     algorithm: spec.algorithm,
@@ -101,10 +115,17 @@ export function runGame(options: RunGameOptions): GameMetrics {
     useGatedHold: spec.useGatedHold ?? false,
     wellReservation: spec.wellReservation ?? false,
     surfaceOverhang: spec.surfaceOverhang ?? false,
+    futureSetup: spec.futureSetup ?? false,
+    tspinSetup: spec.tspinSetup ?? false,
+    futureClear: spec.futureClear ?? false,
+    futureWeights: spec.futureWeights,
     actionDelayMs: 1,
     onResult: (result) => {
       latencies.push(result.elapsedMs);
       nodes += result.nodes;
+      activationsSetup += result.activations?.setup ?? 0;
+      activationsTspin += result.activations?.tspin ?? 0;
+      activationsClear += result.activations?.clear ?? 0;
     },
   });
   ai.setEnabled(true);
@@ -148,6 +169,9 @@ export function runGame(options: RunGameOptions): GameMetrics {
     decisions: latencies.length,
     latencies,
     nodes,
+    activationsSetup,
+    activationsTspin,
+    activationsClear,
   };
 }
 
@@ -206,6 +230,12 @@ export function summarize(results: GameMetrics[], spec: SearchSpec): BenchmarkSu
     averageMaxCombo: results.reduce((sum, r) => sum + r.maxCombo, 0) / games,
     averageB2B: results.reduce((sum, r) => sum + r.b2bClears, 0) / games,
     averagePC: results.reduce((sum, r) => sum + r.perfectClears, 0) / games,
+    averageActivationsSetup:
+      totalDecisions === 0 ? 0 : results.reduce((sum, r) => sum + r.activationsSetup, 0) / totalDecisions,
+    averageActivationsTspin:
+      totalDecisions === 0 ? 0 : results.reduce((sum, r) => sum + r.activationsTspin, 0) / totalDecisions,
+    averageActivationsClear:
+      totalDecisions === 0 ? 0 : results.reduce((sum, r) => sum + r.activationsClear, 0) / totalDecisions,
     results,
   };
 }
@@ -237,5 +267,8 @@ export function formatSummary(summary: BenchmarkSummary): string {
     `ren=${summary.averageMaxCombo.toFixed(2)}`,
     `b2b=${summary.averageB2B.toFixed(2)}`,
     `pc=${summary.averagePC.toFixed(2)}`,
+    `actSetup=${summary.averageActivationsSetup.toFixed(1)}`,
+    `actTspin=${summary.averageActivationsTspin.toFixed(1)}`,
+    `actClear=${summary.averageActivationsClear.toFixed(1)}`,
   ].join(" ");
 }
