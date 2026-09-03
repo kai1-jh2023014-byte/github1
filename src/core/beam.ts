@@ -3,6 +3,8 @@ import { placeAndClear } from "../game/lineClear";
 import type { Board, TetrominoType } from "../game/types";
 import { generateMoves, generateMovesWithSpins } from "../ai/moveGenerator";
 import { evaluateBoard, mechanicsScore } from "../ai/evaluator";
+import { shouldExploreHold } from "../ai/holdGate";
+import { overhangScore, wellReservationScore } from "../ai/structure";
 import type { EvalWeights, Placement, ScoredCandidate, SearchResult } from "../ai/types";
 import { DEFAULT_MECHANICS, ZERO_MECHANICS } from "../ai/weights";
 import type { MechanicsWeights } from "../ai/weights";
@@ -16,6 +18,9 @@ export interface BeamConfig {
   depth: number;
   beamWidth: number;
   useHold: boolean;
+  useGatedHold: boolean;
+  wellReservation: boolean;
+  surfaceOverhang: boolean;
   useSpins: boolean;
   holdAtRootOnly: boolean;
   mechanics: MechanicsWeights;
@@ -25,6 +30,9 @@ export const DEFAULT_BEAM: BeamConfig = {
   depth: 3,
   beamWidth: 12,
   useHold: false,
+  useGatedHold: false,
+  wellReservation: false,
+  surfaceOverhang: false,
   useSpins: true,
   holdAtRootOnly: true,
   mechanics: DEFAULT_MECHANICS,
@@ -60,6 +68,9 @@ export class BeamSearch implements SearchAlgorithm {
       depth: Math.max(1, context.depth || this.config.depth),
       beamWidth: Math.max(1, context.beamWidth ?? this.config.beamWidth),
       useHold: context.useHold ?? this.config.useHold,
+      useGatedHold: context.useGatedHold ?? this.config.useGatedHold,
+      wellReservation: context.wellReservation ?? this.config.wellReservation,
+      surfaceOverhang: context.surfaceOverhang ?? this.config.surfaceOverhang,
       useSpins: this.config.useSpins,
       holdAtRootOnly: context.holdAtRootOnly ?? this.config.holdAtRootOnly,
       mechanics: context.mechanicsWeights ?? this.config.mechanics ?? ZERO_MECHANICS,
@@ -171,6 +182,13 @@ function expand(
       const pathMechanics = node.pathMechanics + extra;
       const boardEval = evaluateBoard(placed.board, pathLines, weights);
       const [nextCurrent, ...rest] = nextQueue;
+      let structure = 0;
+      if (cfg.wellReservation) {
+        structure += wellReservationScore(placed.board, holdPiece, nextCurrent ?? null, rest);
+      }
+      if (cfg.surfaceOverhang) {
+        structure += overhangScore(placed.board);
+      }
       children.push({
         board: placed.board,
         current: nextCurrent ?? null,
@@ -181,7 +199,7 @@ function expand(
         backToBack: b2bAfter,
         pathLines,
         pathMechanics,
-        score: boardEval.score + pathMechanics,
+        score: boardEval.score + pathMechanics + structure,
         rootMove: isRoot ? { ...move.placement, hold } : node.rootMove,
         features: boardEval.features,
       });
@@ -190,7 +208,16 @@ function expand(
 
   pushPlacements(node.current, false, node.hold, node.nextQueue);
 
-  if (cfg.useHold && node.canHold && (isRoot || !cfg.holdAtRootOnly)) {
+  const gated =
+    cfg.useGatedHold &&
+    shouldExploreHold({
+      board: node.board,
+      current: node.current,
+      hold: node.hold,
+      nextQueue: node.nextQueue,
+      canHold: node.canHold,
+    });
+  if ((cfg.useHold || gated) && node.canHold && (isRoot || !cfg.holdAtRootOnly)) {
     const held = applyHold({
       current: node.current,
       hold: node.hold,

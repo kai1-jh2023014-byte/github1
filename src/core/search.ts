@@ -14,6 +14,9 @@ export interface SearchContext {
   useHold?: boolean;
   holdAtRootOnly?: boolean;
   mechanicsWeights?: MechanicsWeights;
+  useGatedHold?: boolean;
+  wellReservation?: boolean;
+  surfaceOverhang?: boolean;
 }
 
 export interface SearchAlgorithm {

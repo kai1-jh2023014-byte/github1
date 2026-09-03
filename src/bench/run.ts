@@ -14,6 +14,9 @@ export interface SearchSpec {
   useHold?: boolean;
   holdAtRootOnly?: boolean;
   mechanicsWeights?: MechanicsWeights;
+  useGatedHold?: boolean;
+  wellReservation?: boolean;
+  surfaceOverhang?: boolean;
 }
 
 export interface GameMetrics {
@@ -95,6 +98,9 @@ export function runGame(options: RunGameOptions): GameMetrics {
     useHold: spec.useHold ?? false,
     holdAtRootOnly: spec.holdAtRootOnly,
     mechanicsWeights: spec.mechanicsWeights ?? ZERO_MECHANICS,
+    useGatedHold: spec.useGatedHold ?? false,
+    wellReservation: spec.wellReservation ?? false,
+    surfaceOverhang: spec.surfaceOverhang ?? false,
     actionDelayMs: 1,
     onResult: (result) => {
       latencies.push(result.elapsedMs);

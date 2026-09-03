@@ -4,6 +4,7 @@ import { generateMovesWithSpins } from "../ai/moveGenerator";
 import { placeAndClear } from "../game/lineClear";
 import { DEFAULT_WEIGHTS } from "../ai/weights";
 import type { Placement } from "../ai/types";
+import type { SearchContext } from "../core/search";
 import { frozenSearchContext } from "./frozen";
 import { samePlacement } from "./state";
 import type { AgreementStats, RankedChoice, ReplayStep } from "./types";
@@ -11,7 +12,10 @@ import type { AgreementStats, RankedChoice, ReplayStep } from "./types";
 const beam = new BeamSearch();
 
 export function rankHumanVsFrozenBeam(step: ReplayStep): RankedChoice {
-  const context = frozenSearchContext();
+  return rankHumanVsBeam(step, frozenSearchContext());
+}
+
+export function rankHumanVsBeam(step: ReplayStep, context: SearchContext): RankedChoice {
   const result = beam.search(step.stateBefore, context);
   const human: Placement = {
     hold: step.human.hold,

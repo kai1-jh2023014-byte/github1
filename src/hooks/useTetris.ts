@@ -61,7 +61,10 @@ export function useTetris() {
       depth: DEFAULT_BEAM.depth,
       algorithm: "beam",
       beamWidth: DEFAULT_BEAM.beamWidth,
-      useHold: false,
+      useHold: DEFAULT_BEAM.useHold,
+      useGatedHold: DEFAULT_BEAM.useGatedHold,
+      wellReservation: DEFAULT_BEAM.wellReservation,
+      surfaceOverhang: DEFAULT_BEAM.surfaceOverhang,
       mechanicsWeights: DEFAULT_MECHANICS,
       onResult: (result) => setDebug(result),
     });
@@ -97,11 +100,17 @@ export function useTetris() {
     if (searchMode === "beam") {
       ai.depth = DEFAULT_BEAM.depth;
       ai.beamWidth = DEFAULT_BEAM.beamWidth;
-      ai.useHold = false;
+      ai.useHold = DEFAULT_BEAM.useHold;
+      ai.useGatedHold = DEFAULT_BEAM.useGatedHold;
+      ai.wellReservation = DEFAULT_BEAM.wellReservation;
+      ai.surfaceOverhang = DEFAULT_BEAM.surfaceOverhang;
       ai.mechanicsWeights = DEFAULT_MECHANICS;
     } else {
       ai.depth = searchDepth;
       ai.useHold = false;
+      ai.useGatedHold = false;
+      ai.wellReservation = false;
+      ai.surfaceOverhang = false;
       ai.mechanicsWeights = ZERO_MECHANICS;
     }
     ai.resetPlan();

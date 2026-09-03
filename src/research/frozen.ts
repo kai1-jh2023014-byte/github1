@@ -22,6 +22,9 @@ export function frozenSearchContext(): SearchContext {
     useHold: FROZEN_BEAM.useHold,
     holdAtRootOnly: FROZEN_BEAM.holdAtRootOnly,
     mechanicsWeights: DEFAULT_MECHANICS,
+    useGatedHold: false,
+    wellReservation: false,
+    surfaceOverhang: false,
   };
 }
 

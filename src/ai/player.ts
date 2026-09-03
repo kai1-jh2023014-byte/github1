@@ -19,6 +19,9 @@ export interface AIPlayerOptions {
   useHold?: boolean;
   holdAtRootOnly?: boolean;
   mechanicsWeights?: MechanicsWeights;
+  useGatedHold?: boolean;
+  wellReservation?: boolean;
+  surfaceOverhang?: boolean;
 }
 
 export class AIPlayer {
@@ -31,6 +34,9 @@ export class AIPlayer {
   useHold: boolean;
   holdAtRootOnly: boolean;
   mechanicsWeights: MechanicsWeights;
+  useGatedHold: boolean;
+  wellReservation: boolean;
+  surfaceOverhang: boolean;
 
   private enabled = false;
   private readonly context: SearchContext;
@@ -48,6 +54,11 @@ export class AIPlayer {
     this.holdAtRootOnly = options.holdAtRootOnly ?? true;
     this.mechanicsWeights =
       options.mechanicsWeights ?? (this.algorithm === "beam" ? DEFAULT_MECHANICS : { ...ZERO_MECHANICS });
+    this.useGatedHold = options.useGatedHold ?? (this.algorithm === "beam" ? DEFAULT_BEAM.useGatedHold : false);
+    this.wellReservation =
+      options.wellReservation ?? (this.algorithm === "beam" ? DEFAULT_BEAM.wellReservation : false);
+    this.surfaceOverhang =
+      options.surfaceOverhang ?? (this.algorithm === "beam" ? DEFAULT_BEAM.surfaceOverhang : false);
     this.context = {
       weights: this.weights,
       depth: this.depth,
@@ -56,6 +67,9 @@ export class AIPlayer {
       useHold: this.useHold,
       holdAtRootOnly: this.holdAtRootOnly,
       mechanicsWeights: this.mechanicsWeights,
+      useGatedHold: this.useGatedHold,
+      wellReservation: this.wellReservation,
+      surfaceOverhang: this.surfaceOverhang,
     };
     this.core = new TetrisAICore(createSearch(this.algorithm));
     this.loop = new ControlLoop(
@@ -93,6 +107,9 @@ export class AIPlayer {
     this.context.useHold = this.useHold;
     this.context.holdAtRootOnly = this.holdAtRootOnly;
     this.context.mechanicsWeights = this.mechanicsWeights;
+    this.context.useGatedHold = this.useGatedHold;
+    this.context.wellReservation = this.wellReservation;
+    this.context.surfaceOverhang = this.surfaceOverhang;
     this.loop.tick(now, this.enabled, adapter);
   }
 }
