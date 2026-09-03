@@ -128,6 +128,12 @@ Details: [docs/research/phase5-beam-width.md](research/phase5-beam-width.md).
 
 Widths 4–32 vs frozen live config. **Case B — width saturation.** Width 12 has best 10×100 score (15722); wider beams do not improve real games. Production `beamWidth=12` unchanged.
 
+## Final — Depth sensitivity
+
+Details: [docs/research/final-report.md](research/final-report.md).
+
+Depths 1–4, width 12 fixed. **Depth 4 REJECTED** (10×100 lines 38.90→38.70; score +264 but lines regression). **Production stays depth 3.**
+
 ## Regression
 
 `npm test` / `npm run build` / AI PLAYING path through `GameEngine.input()`.

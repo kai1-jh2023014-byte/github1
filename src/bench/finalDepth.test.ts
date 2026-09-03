@@ -50,6 +50,7 @@ describe.skipIf(!RUN)("Final depth sensitivity", () => {
 
       expect(rows.find((r) => r.depth === 3)).toBeDefined();
       expect(change.decisions).toBeGreaterThan(0);
+      expect(verdict.adopt).toBe(false);
     },
     900_000,
   );

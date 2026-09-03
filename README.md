@@ -30,7 +30,9 @@ npm run build # 本番ビルド
 | P | 一時停止 / 再開 |
 | R | リスタート |
 
-AI を ON にすると、探索結果に従って通常の操作（移動・回転・ハードドロップ、必要ならホールド）で自動プレイします。既定の探索は Beam Search（深さ 3、幅 12）です。Hold 探索はゲート付き（I-save / tetris well のときだけ）で、無条件 Hold は使いません。1-PLY / 2-PLY は従来のベースラインです。
+AI を ON にすると、探索結果に従って通常の操作（移動・回転・ハードドロップ、必要ならホールド）で自動プレイします。既定の探索は **凍結済み** Beam Search（**深さ 3、幅 12**）です。Hold 探索はゲート付き（I-save / tetris well のときだけ）で、無条件 Hold は使いません。1-PLY / 2-PLY は従来のベースラインです。
+
+研究の最終報告: [docs/research/final-report.md](docs/research/final-report.md)
 
 ## 構成
 

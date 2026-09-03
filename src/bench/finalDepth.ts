@@ -190,10 +190,19 @@ export function evaluateDepth4Adoption(rows: DepthBenchmarkRow[]): DepthAdoption
 
   const linesUp = long4.averageLines > long3.averageLines + 1e-9;
   const scoreUp = long4.averageScore > long3.averageScore + 1e-9;
-  if (!linesUp && !scoreUp) {
+
+  if (long4.averageLines + 1e-9 < long3.averageLines) {
     reasons.push(
-      `10x100 no improvement: lines ${long4.averageLines.toFixed(2)} vs ${long3.averageLines.toFixed(2)}, score ${long4.averageScore.toFixed(1)} vs ${long3.averageScore.toFixed(1)}`,
+      `10x100 lines regression ${long4.averageLines.toFixed(2)} < ${long3.averageLines.toFixed(2)}`,
     );
+  }
+  if (long4.averageScore + 1e-9 < long3.averageScore) {
+    reasons.push(
+      `10x100 score regression ${long4.averageScore.toFixed(1)} < ${long3.averageScore.toFixed(1)}`,
+    );
+  }
+  if (!linesUp && !scoreUp) {
+    reasons.push("10x100 did not improve lines or score");
   }
 
   if (long4.gameOverRate > long3.gameOverRate + 1e-9) {
@@ -220,7 +229,10 @@ export function evaluateDepth4Adoption(rows: DepthBenchmarkRow[]): DepthAdoption
     reasons.push(`5x100 score regression ${mid4.averageScore.toFixed(1)} < ${mid3.averageScore.toFixed(1)}`);
   }
 
-  return { adopt: reasons.length === 0 && (linesUp || scoreUp), reasons };
+  return {
+    adopt: reasons.length === 0 && linesUp && scoreUp,
+    reasons,
+  };
 }
 
 export { runProtocol, formatSummary };
