@@ -1,6 +1,6 @@
 # Tetris AI
 
-ブラウザだけで動作するテトリスです。人間操作と、盤面評価ベースの AI 自動プレイの両方に対応しています。
+ブラウザだけで動作するテトリスと、外部ゲーム接続を前提にした **Tetris AI Core** です。人間操作と、盤面評価ベースの AI 自動プレイの両方に対応しています。
 
 ## 起動
 
@@ -12,7 +12,8 @@ npm run dev
 ブラウザで `http://localhost:5173` を開いてください。
 
 ```bash
-npm test      # ユニット / AI シミュレーション
+npm test      # ユニット / vision PoC / AI シミュレーション
+npm run bench # 1-ply vs 2-ply benchmark
 npm run build # 本番ビルド
 ```
 
@@ -34,9 +35,17 @@ AI を ON にすると、探索結果に従って通常の操作（移動・回�
 
 ```
 src/
-  game/   Board, Piece, Collision, LineClear, GameEngine
-  ai/     MoveGenerator, BoardEvaluator, Search, AIPlayer
-  ui/     Canvas 描画とデバッグパネル
+  core/       GameState / Action / Search / Strategy / ControlLoop
+  game/       Board, Piece, Collision, LineClear, GameEngine
+  ai/         Evaluator, MoveGenerator, Ply search, AIPlayer
+  adapters/   BrowserGameAdapter, recording virtual pad
+  vision/     Screenshot → board detector (own-game PoC)
+  bench/      Seeded multi-game metrics
+  ui/         Canvas, HUD, DebugPanel
 ```
 
-AI はゲーム状態をワープさせず、`GameEngine.input()` 経由で操作します。探索は 1 手先（1-ply）と、次ピースまで見る 2 手先（2-ply）を切り替えできます。
+AI Core は `TetrisGameState` を受け取り `TetrisAction` を返します。ブラウザ版は `BrowserGameAdapter` がそれを `GameEngine.input()` に変換します。探索は 1-ply / 2-ply を切り替えできます。
+
+外部ゲーム用の実コントローラ出力は **ローカル / オフライン / 自作ゲーム向けの記録 PoC** です。オンライン対戦・メモリ改変・アンチチート回避は対象外です。
+
+詳細: [docs/architecture.md](docs/architecture.md), [docs/external-connection.md](docs/external-connection.md), [docs/pdca.md](docs/pdca.md)

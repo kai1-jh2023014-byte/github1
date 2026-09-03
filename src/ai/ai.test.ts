@@ -9,6 +9,7 @@ import { findBestMove } from "./search";
 import { DEFAULT_WEIGHTS } from "./weights";
 import { AIPlayer } from "./player";
 import { GameEngine } from "../game/engine";
+import { BrowserGameAdapter } from "../adapters/browser";
 import type { TetrominoType } from "../game/types";
 
 describe("evaluator", () => {
@@ -95,6 +96,7 @@ describe("search", () => {
 describe("AI player", () => {
   it("plays through ordinary engine actions and survives a long run", () => {
     const engine = new GameEngine();
+    const adapter = new BrowserGameAdapter(engine);
     const ai = new AIPlayer({ depth: 1, actionDelayMs: 1 });
     ai.setEnabled(true);
     engine.start();
@@ -110,7 +112,7 @@ describe("AI player", () => {
     for (let i = 0; i < 400; i++) {
       now += 16;
       engine.tick(now);
-      ai.tick(now, engine);
+      ai.tick(now, adapter);
       if (engine.getStatus() === "gameover") break;
     }
 

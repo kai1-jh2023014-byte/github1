@@ -14,6 +14,8 @@ export default function App() {
     setSearchDepth,
     debug,
     weights,
+    vision,
+    onCanvasFrame,
     start,
     pause,
     resume,
@@ -51,6 +53,7 @@ export default function App() {
             board={snapshot.board}
             current={snapshot.current}
             ghost={snapshot.ghost}
+            onFrame={debugEnabled ? onCanvasFrame : undefined}
           />
           {(paused || over || ready) && (
             <div className="overlay">
@@ -138,7 +141,7 @@ export default function App() {
         </aside>
       </main>
 
-      {debugEnabled && <DebugPanel result={debug} weights={weights} />}
+      {debugEnabled && <DebugPanel result={debug} weights={weights} vision={vision} />}
     </div>
   );
 }

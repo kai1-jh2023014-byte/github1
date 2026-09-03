@@ -3,6 +3,8 @@ import { AIPlayer, DEFAULT_WEIGHTS } from "../ai";
 import type { SearchDepth, SearchResult } from "../ai";
 import { createBoard, GameEngine } from "../game";
 import type { GameSnapshot } from "../game";
+import { BrowserGameAdapter } from "../adapters/browser";
+import { compareBoards, detectGameState, imageDataToBuffer } from "../vision";
 
 const EMPTY_SNAPSHOT: GameSnapshot = {
   board: createBoard(),
@@ -26,9 +28,16 @@ export function useTetris() {
   const [searchDepth, setSearchDepth] = useState<SearchDepth>(2);
   const [debug, setDebug] = useState<SearchResult | null>(null);
   const [weights] = useState(DEFAULT_WEIGHTS);
+  const [vision, setVision] = useState<{
+    cellsCorrect: number;
+    cellsTotal: number;
+    elapsedMs: number;
+    pieceMatch: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const engine = new GameEngine();
+    const adapter = new BrowserGameAdapter(engine);
     const ai = new AIPlayer({
       weights,
       depth: 2,
@@ -43,7 +52,7 @@ export function useTetris() {
     let raf = 0;
     const loop = (now: number) => {
       engine.tick(now);
-      ai.tick(now, engine);
+      ai.tick(now, adapter);
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -122,6 +131,24 @@ export function useTetris() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [restart, togglePause]);
 
+  const onCanvasFrame = useCallback(
+    (image: ImageData) => {
+      if (!debugEnabled) return;
+      const engine = engineRef.current;
+      if (!engine) return;
+      const detected = detectGameState(imageDataToBuffer(image));
+      const snap = engine.getSnapshot();
+      const cmp = compareBoards(snap.board, detected.state.board);
+      setVision({
+        cellsCorrect: cmp.correct,
+        cellsTotal: cmp.total,
+        elapsedMs: detected.elapsedMs,
+        pieceMatch: detected.state.current?.type === snap.current?.type,
+      });
+    },
+    [debugEnabled],
+  );
+
   return {
     snapshot,
     aiEnabled,
@@ -132,6 +159,8 @@ export function useTetris() {
     setSearchDepth,
     debug,
     weights,
+    vision,
+    onCanvasFrame,
     start,
     pause,
     resume,

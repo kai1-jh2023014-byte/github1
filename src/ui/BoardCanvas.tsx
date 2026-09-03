@@ -11,18 +11,20 @@ interface BoardCanvasProps {
   board: Board;
   current: ActivePiece | null;
   ghost: ActivePiece | null;
+  onFrame?: (image: ImageData) => void;
 }
 
-export function BoardCanvas({ board, current, ghost }: BoardCanvasProps) {
+export function BoardCanvas({ board, current, ghost, onFrame }: BoardCanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
     drawBoard(ctx, board, current, ghost);
-  }, [board, current, ghost]);
+    if (onFrame) onFrame(ctx.getImageData(0, 0, canvas.width, canvas.height));
+  }, [board, current, ghost, onFrame]);
 
   return (
     <canvas

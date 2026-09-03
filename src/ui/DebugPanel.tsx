@@ -4,9 +4,15 @@ import type { EvalWeights, SearchResult } from "../ai/types";
 interface DebugPanelProps {
   result: SearchResult | null;
   weights: EvalWeights;
+  vision?: {
+    cellsCorrect: number;
+    cellsTotal: number;
+    elapsedMs: number;
+    pieceMatch: boolean;
+  } | null;
 }
 
-export function DebugPanel({ result, weights }: DebugPanelProps) {
+export function DebugPanel({ result, weights, vision }: DebugPanelProps) {
   const chosen = result?.candidates[0] ?? null;
   const top = result?.candidates.slice(0, 8) ?? [];
 
@@ -14,7 +20,12 @@ export function DebugPanel({ result, weights }: DebugPanelProps) {
     <section className="debug-panel">
       <header>
         <h2>AI DEBUG</h2>
-        <span>{result ? `${result.elapsedMs.toFixed(2)} ms` : "waiting"}</span>
+        <span>
+          {result ? `${result.elapsedMs.toFixed(2)} ms` : "waiting"}
+          {vision
+            ? ` · vision ${vision.cellsCorrect}/${vision.cellsTotal} (${vision.elapsedMs.toFixed(2)} ms)`
+            : ""}
+        </span>
       </header>
       <div className="debug-grid">
         <div className="debug-card">
