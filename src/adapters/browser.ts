@@ -11,7 +11,7 @@ const ACTION_MAP: Record<TetrisAction["type"], GameAction | null> = {
   rotateCCW: "rotateCCW",
   softDrop: "softDrop",
   hardDrop: "hardDrop",
-  hold: null,
+  hold: "hold",
 };
 
 export function snapshotToState(engine: GameEngine): TetrisGameState {
@@ -19,9 +19,11 @@ export function snapshotToState(engine: GameEngine): TetrisGameState {
   return {
     board: snap.board,
     current: snap.current,
-    nextPieces: snap.next ? [snap.next] : [],
-    holdPiece: null,
-    canHold: false,
+    nextPieces: snap.nextQueue.length > 0 ? snap.nextQueue : snap.next ? [snap.next] : [],
+    holdPiece: snap.hold,
+    canHold: snap.canHold,
+    combo: snap.combo,
+    backToBack: snap.backToBack,
     phase: snap.status,
     extras: {
       score: snap.score,

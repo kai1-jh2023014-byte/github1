@@ -12,9 +12,11 @@ export interface PlannedMove {
 }
 
 export class TetrisAICore {
-  constructor(
-    private readonly searchAlgo: SearchAlgorithm = new PlySearch(),
-  ) {}
+  constructor(private searchAlgo: SearchAlgorithm = new PlySearch()) {}
+
+  setSearch(search: SearchAlgorithm): void {
+    this.searchAlgo = search;
+  }
 
   think(state: TetrisGameState, context: SearchContext): SearchResult {
     return this.searchAlgo.search(state, context);

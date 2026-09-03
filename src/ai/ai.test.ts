@@ -4,7 +4,7 @@ import { canPlace } from "../game/collision";
 import { ROWS } from "../game/constants";
 import { placeAndClear } from "../game/lineClear";
 import { computeFeatures, evaluateBoard } from "./evaluator";
-import { generateMoves } from "./moveGenerator";
+import { generateMoves, generateMovesWithSpins } from "./moveGenerator";
 import { findBestMove } from "./search";
 import { DEFAULT_WEIGHTS } from "./weights";
 import { AIPlayer } from "./player";
@@ -60,6 +60,13 @@ describe("move generator", () => {
       const placed = placeAndClear(board, move.piece).board;
       expect(placed.flat().filter((cell) => cell !== 0).length).toBeGreaterThan(0);
     }
+  });
+
+  it("adds grounded spin placements on top of ordinary moves", () => {
+    const board = createBoard();
+    const base = generateMoves(board, "T");
+    const withSpins = generateMovesWithSpins(board, "T");
+    expect(withSpins.length).toBeGreaterThanOrEqual(base.length);
   });
 });
 

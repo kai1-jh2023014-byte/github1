@@ -44,12 +44,16 @@ export function DebugPanel({ result, weights, vision }: DebugPanelProps) {
               <dd>{result?.move ? result.move.y : "—"}</dd>
             </div>
             <div>
+              <dt>Hold</dt>
+              <dd>{result?.move?.hold ? "YES" : "NO"}</dd>
+            </div>
+            <div>
               <dt>Score</dt>
               <dd>{result ? result.bestScore.toFixed(3) : "—"}</dd>
             </div>
             <div>
               <dt>Depth</dt>
-              <dd>{result ? `${result.depth}-ply` : "—"}</dd>
+              <dd>{result ? String(result.depth) : "—"}</dd>
             </div>
             <div>
               <dt>Nodes</dt>
@@ -84,6 +88,7 @@ export function DebugPanel({ result, weights, vision }: DebugPanelProps) {
           <table>
             <thead>
               <tr>
+                <th>h</th>
                 <th>rot</th>
                 <th>x</th>
                 <th>y</th>
@@ -93,11 +98,12 @@ export function DebugPanel({ result, weights, vision }: DebugPanelProps) {
             <tbody>
               {top.length === 0 ? (
                 <tr>
-                  <td colSpan={4}>No candidates yet</td>
+                  <td colSpan={5}>No candidates yet</td>
                 </tr>
               ) : (
                 top.map((candidate, index) => (
                   <tr key={`${candidate.placement.rotation}-${candidate.placement.x}-${index}`}>
+                    <td>{candidate.placement.hold ? "H" : ""}</td>
                     <td>{candidate.placement.rotation}</td>
                     <td>{candidate.placement.x}</td>
                     <td>{candidate.placement.y}</td>

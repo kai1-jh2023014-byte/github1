@@ -37,6 +37,8 @@ export function detectGameState(buffer: PixelBuffer): { state: TetrisGameState; 
       nextPieces: [],
       holdPiece: null,
       canHold: false,
+      combo: 0,
+      backToBack: false,
       phase: "playing",
     },
   };

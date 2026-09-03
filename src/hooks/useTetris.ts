@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AIPlayer, DEFAULT_WEIGHTS } from "../ai";
+import { AIPlayer, DEFAULT_MECHANICS, DEFAULT_WEIGHTS, ZERO_MECHANICS } from "../ai";
 import type { SearchDepth, SearchResult } from "../ai";
+import { DEFAULT_BEAM } from "../core/beam";
 import { createBoard, GameEngine } from "../game";
 import type { GameSnapshot } from "../game";
 import { BrowserGameAdapter } from "../adapters/browser";
@@ -10,12 +11,28 @@ const EMPTY_SNAPSHOT: GameSnapshot = {
   board: createBoard(),
   current: null,
   next: null,
+  nextQueue: [],
+  hold: null,
+  canHold: true,
+  combo: 0,
+  backToBack: false,
   score: 0,
   level: 1,
   lines: 0,
   status: "ready",
   ghost: null,
+  stats: {
+    holds: 0,
+    tSpins: 0,
+    tSpinMinis: 0,
+    maxCombo: 0,
+    b2bClears: 0,
+    perfectClears: 0,
+    tetrises: 0,
+  },
 };
+
+export type SearchMode = "ply" | "beam";
 
 export function useTetris() {
   const engineRef = useRef<GameEngine | null>(null);
@@ -25,6 +42,7 @@ export function useTetris() {
   const [snapshot, setSnapshot] = useState<GameSnapshot>(EMPTY_SNAPSHOT);
   const [aiEnabled, setAiEnabled] = useState(true);
   const [debugEnabled, setDebugEnabled] = useState(true);
+  const [searchMode, setSearchMode] = useState<SearchMode>("ply");
   const [searchDepth, setSearchDepth] = useState<SearchDepth>(2);
   const [debug, setDebug] = useState<SearchResult | null>(null);
   const [weights] = useState(DEFAULT_WEIGHTS);
@@ -41,6 +59,7 @@ export function useTetris() {
     const ai = new AIPlayer({
       weights,
       depth: 2,
+      algorithm: "ply",
       onResult: (result) => setDebug(result),
     });
     ai.setEnabled(true);
@@ -69,11 +88,24 @@ export function useTetris() {
   }, [aiEnabled]);
 
   useEffect(() => {
-    if (aiRef.current) {
-      aiRef.current.depth = searchDepth;
-      aiRef.current.resetPlan();
+    const ai = aiRef.current;
+    if (!ai) return;
+    ai.setAlgorithm(searchMode);
+    if (searchMode === "beam") {
+      ai.depth = Math.max(searchDepth, DEFAULT_BEAM.depth);
+      ai.beamWidth = DEFAULT_BEAM.beamWidth;
+      ai.useHold = true;
+      ai.mechanicsWeights = DEFAULT_MECHANICS;
+      if (searchDepth < DEFAULT_BEAM.depth) {
+        ai.depth = DEFAULT_BEAM.depth;
+      }
+    } else {
+      ai.depth = searchDepth;
+      ai.useHold = false;
+      ai.mechanicsWeights = ZERO_MECHANICS;
     }
-  }, [searchDepth]);
+    ai.resetPlan();
+  }, [searchDepth, searchMode]);
 
   const start = useCallback(() => engineRef.current?.start(), []);
   const pause = useCallback(() => engineRef.current?.pause(), []);
@@ -89,6 +121,16 @@ export function useTetris() {
     if (status === "paused") resume();
     else if (status === "playing") pause();
   }, [pause, resume]);
+
+  const selectPly = useCallback((depth: 1 | 2) => {
+    setSearchMode("ply");
+    setSearchDepth(depth);
+  }, []);
+
+  const selectBeam = useCallback(() => {
+    setSearchMode("beam");
+    setSearchDepth(DEFAULT_BEAM.depth);
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -119,11 +161,14 @@ export function useTetris() {
         z: () => engine.input("rotateCCW"),
         Z: () => engine.input("rotateCCW"),
         " ": () => engine.input("hardDrop"),
+        c: () => engine.input("hold"),
+        C: () => engine.input("hold"),
+        Shift: () => engine.input("hold"),
       };
       const action = keyActions[event.key];
       if (!action) return;
       event.preventDefault();
-      if (event.repeat && event.key === " ") return;
+      if (event.repeat && (event.key === " " || event.key === "Shift")) return;
       action();
     };
 
@@ -155,8 +200,11 @@ export function useTetris() {
     setAiEnabled,
     debugEnabled,
     setDebugEnabled,
+    searchMode,
     searchDepth,
     setSearchDepth,
+    selectPly,
+    selectBeam,
     debug,
     weights,
     vision,

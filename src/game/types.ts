@@ -25,17 +25,32 @@ export type GameAction =
   | "rotateCW"
   | "rotateCCW"
   | "softDrop"
-  | "hardDrop";
+  | "hardDrop"
+  | "hold";
 
 export interface GameSnapshot {
   board: Board;
   current: ActivePiece | null;
   next: TetrominoType | null;
+  nextQueue: TetrominoType[];
+  hold: TetrominoType | null;
+  canHold: boolean;
+  combo: number;
+  backToBack: boolean;
   score: number;
   level: number;
   lines: number;
   status: GameStatus;
   ghost: ActivePiece | null;
+  stats: {
+    holds: number;
+    tSpins: number;
+    tSpinMinis: number;
+    maxCombo: number;
+    b2bClears: number;
+    perfectClears: number;
+    tetrises: number;
+  };
 }
 
 export const TETROMINO_TYPES: TetrominoType[] = [

@@ -10,8 +10,10 @@ export default function App() {
     setAiEnabled,
     debugEnabled,
     setDebugEnabled,
+    searchMode,
     searchDepth,
-    setSearchDepth,
+    selectPly,
+    selectBeam,
     debug,
     weights,
     vision,
@@ -70,10 +72,18 @@ export default function App() {
         </section>
 
         <aside className="panel">
-          <div className="panel-block">
-            <h2>NEXT</h2>
-            <div className="next-box">
-              <MiniPiece type={snapshot.next} />
+          <div className="previews">
+            <div className="panel-block">
+              <h2>HOLD</h2>
+              <div className="next-box">
+                <MiniPiece type={snapshot.hold} />
+              </div>
+            </div>
+            <div className="panel-block">
+              <h2>NEXT</h2>
+              <div className="next-box">
+                <MiniPiece type={snapshot.next} />
+              </div>
             </div>
           </div>
 
@@ -81,6 +91,8 @@ export default function App() {
             <Stat label="Score" value={snapshot.score.toLocaleString()} />
             <Stat label="Level" value={snapshot.level} />
             <Stat label="Lines" value={snapshot.lines} />
+            <Stat label="REN" value={snapshot.combo} />
+            <Stat label="B2B" value={snapshot.backToBack ? "ON" : "OFF"} />
             <Stat label="Current" value={snapshot.current?.type ?? "—"} />
           </div>
 
@@ -116,27 +128,35 @@ export default function App() {
           </div>
 
           <div className="depth">
-            <span>Search depth</span>
+            <span>Search</span>
             <div>
               <button
                 type="button"
-                className={searchDepth === 1 ? "active" : ""}
-                onClick={() => setSearchDepth(1)}
+                className={searchMode === "ply" && searchDepth === 1 ? "active" : ""}
+                onClick={() => selectPly(1)}
               >
                 1-PLY
               </button>
               <button
                 type="button"
-                className={searchDepth === 2 ? "active" : ""}
-                onClick={() => setSearchDepth(2)}
+                className={searchMode === "ply" && searchDepth === 2 ? "active" : ""}
+                onClick={() => selectPly(2)}
               >
                 2-PLY
+              </button>
+              <button
+                type="button"
+                className={searchMode === "beam" ? "active" : ""}
+                onClick={selectBeam}
+              >
+                BEAM
               </button>
             </div>
           </div>
 
           <p className="help">
-            Human: ← → move, ↑/X rotate, Z reverse, ↓ soft drop, Space hard drop, P pause, R restart
+            Human: ← → move, ↑/X rotate, Z reverse, ↓ soft drop, Space hard drop, C/Shift hold, P
+            pause, R restart
           </p>
         </aside>
       </main>

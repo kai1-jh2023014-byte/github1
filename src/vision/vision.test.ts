@@ -79,6 +79,8 @@ describe("board vision PoC", () => {
           nextPieces: ["I"],
           holdPiece: null,
           canHold: false,
+          combo: 0,
+          backToBack: false,
           phase: "playing",
         },
         { weights: DEFAULT_WEIGHTS, depth: 1 },

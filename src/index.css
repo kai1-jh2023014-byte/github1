@@ -140,6 +140,12 @@ h1 {
   color: var(--muted);
 }
 
+.previews {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 .next-box {
   margin-top: 10px;
   min-height: 88px;

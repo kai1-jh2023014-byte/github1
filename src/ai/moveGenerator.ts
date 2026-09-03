@@ -37,6 +37,36 @@ export function generateMoves(board: Board, type: TetrominoType): GeneratedMove[
   return moves;
 }
 
+export function generateMovesWithSpins(board: Board, type: TetrominoType): GeneratedMove[] {
+  const base = generateMoves(board, type);
+  const moves = [...base];
+  const seen = new Set(base.map((m) => `${m.piece.rotation}:${m.piece.x}:${m.piece.y}`));
+  for (const move of base) {
+    for (const dir of [1, -1] as const) {
+      const spun = tryRotate(board, move.piece, dir);
+      if (!spun) continue;
+      if (tryMove(board, spun, 0, 1)) continue;
+      const key = `${spun.rotation}:${spun.x}:${spun.y}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      moves.push({
+        piece: spun,
+        placement: {
+          rotation: spun.rotation,
+          x: spun.x,
+          y: spun.y,
+          spinPre: {
+            rotation: move.piece.rotation,
+            x: move.piece.x,
+            y: move.piece.y,
+          },
+        },
+      });
+    }
+  }
+  return moves;
+}
+
 function rotateN(board: Board, piece: ActivePiece, times: number): ActivePiece | null {
   let current = piece;
   for (let i = 0; i < times; i++) {

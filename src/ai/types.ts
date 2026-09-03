@@ -26,6 +26,8 @@ export interface Placement {
   rotation: number;
   x: number;
   y: number;
+  hold?: boolean;
+  spinPre?: { rotation: number; x: number; y: number };
 }
 
 export interface ScoredCandidate {
@@ -34,7 +36,7 @@ export interface ScoredCandidate {
   features: EvalFeatures;
 }
 
-export type SearchDepth = 1 | 2;
+export type SearchDepth = number;
 
 export interface SearchResult {
   move: Placement | null;

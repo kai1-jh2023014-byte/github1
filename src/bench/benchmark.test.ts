@@ -18,5 +18,8 @@ describe("AI benchmark", () => {
     console.log("BENCH 1-ply", formatSummary(one));
     // eslint-disable-next-line no-console
     console.log("BENCH 2-ply", formatSummary(two));
+    expect(two.averageHolds).toBe(0);
+    expect(two.p50DecisionMs).toBeGreaterThanOrEqual(0);
+    expect(two.p95DecisionMs).toBeGreaterThanOrEqual(two.p50DecisionMs);
   });
 });

@@ -81,7 +81,7 @@ export class ControlLoop {
     if (!live || !this.target) return { observed, planned, acted: false };
     const action = nextLiveAction(live, this.target);
     if (!action) return { observed, planned, acted: false };
-    if (action.type === "hardDrop") this.target = null;
+    if (action.type === "hardDrop" || action.type === "hold") this.target = null;
     adapter.press(action);
     return { observed, planned, acted: true };
   }

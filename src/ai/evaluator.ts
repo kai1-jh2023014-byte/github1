@@ -1,7 +1,8 @@
 import { columnHeights, occupiedCount } from "../game/board";
 import { COLS, ROWS } from "../game/constants";
-import type { Board } from "../game/types";
+import type { Board, TetrominoType } from "../game/types";
 import type { EvalFeatures, EvalWeights } from "./types";
+import type { MechanicsWeights } from "./weights";
 
 export function computeFeatures(board: Board, linesCleared: number): EvalFeatures {
   const heights = columnHeights(board);
@@ -46,6 +47,26 @@ export function evaluateBoard(
 ): { score: number; features: EvalFeatures } {
   const features = computeFeatures(board, linesCleared);
   return { score: scoreFeatures(features, weights), features };
+}
+
+export function mechanicsScore(input: {
+  tSpin: "none" | "mini" | "full";
+  linesCleared: number;
+  comboAfter: number;
+  backToBackAfter: boolean;
+  perfectClear: boolean;
+  holdType: TetrominoType | null;
+  weights: MechanicsWeights;
+}): number {
+  const w = input.weights;
+  let extra = 0;
+  if (input.tSpin === "full") extra += w.tSpin * (1 + input.linesCleared);
+  if (input.tSpin === "mini") extra += w.tSpinMini;
+  extra += w.combo * input.comboAfter;
+  extra += w.backToBack * (input.backToBackAfter ? 1 : 0);
+  extra += w.perfectClear * (input.perfectClear ? 1 : 0);
+  extra += w.holdI * (input.holdType === "I" ? 1 : 0);
+  return extra;
 }
 
 function countHoles(board: Board, heights: number[]): number {

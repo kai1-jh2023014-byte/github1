@@ -1,45 +1,72 @@
-import { DEFAULT_WEIGHTS } from "./weights";
-import type { EvalWeights, SearchDepth, SearchResult } from "./types";
+import { DEFAULT_WEIGHTS, DEFAULT_MECHANICS, ZERO_MECHANICS } from "./weights";
+import type { EvalWeights, SearchResult } from "./types";
+import type { MechanicsWeights } from "./weights";
 import type { TetrisGameAdapter } from "../core/adapters";
 import { ControlLoop } from "../core/loop";
 import { TetrisAICore } from "../core/ai";
-import { PlySearch } from "../core/search";
-import type { SearchContext } from "../core/search";
+import { PlySearch, BeamSearch } from "../core/search";
+import type { SearchAlgorithm, SearchContext } from "../core/search";
 import { IdentityStrategy } from "../core/strategy";
+import { DEFAULT_BEAM } from "../core/beam";
 
 export interface AIPlayerOptions {
   weights?: EvalWeights;
-  depth?: SearchDepth;
+  depth?: number;
   actionDelayMs?: number;
   onResult?: (result: SearchResult) => void;
+  algorithm?: "ply" | "beam";
+  beamWidth?: number;
+  useHold?: boolean;
+  mechanicsWeights?: MechanicsWeights;
 }
 
 export class AIPlayer {
   weights: EvalWeights;
-  depth: SearchDepth;
+  depth: number;
   actionDelayMs: number;
   onResult?: (result: SearchResult) => void;
+  algorithm: "ply" | "beam";
+  beamWidth: number;
+  useHold: boolean;
+  mechanicsWeights: MechanicsWeights;
 
   private enabled = false;
   private readonly context: SearchContext;
+  private readonly core: TetrisAICore;
   private readonly loop: ControlLoop;
 
   constructor(options: AIPlayerOptions = {}) {
     this.weights = options.weights ?? { ...DEFAULT_WEIGHTS };
-    this.depth = options.depth ?? 2;
+    this.algorithm = options.algorithm ?? "ply";
+    this.depth = options.depth ?? (this.algorithm === "beam" ? DEFAULT_BEAM.depth : 2);
     this.actionDelayMs = options.actionDelayMs ?? 55;
     this.onResult = options.onResult;
+    this.beamWidth = options.beamWidth ?? DEFAULT_BEAM.beamWidth;
+    this.useHold = options.useHold ?? this.algorithm === "beam";
+    this.mechanicsWeights =
+      options.mechanicsWeights ?? (this.algorithm === "beam" ? DEFAULT_MECHANICS : { ...ZERO_MECHANICS });
     this.context = {
       weights: this.weights,
       depth: this.depth,
       strategy: new IdentityStrategy(),
+      beamWidth: this.beamWidth,
+      useHold: this.useHold,
+      mechanicsWeights: this.mechanicsWeights,
     };
+    this.core = new TetrisAICore(createSearch(this.algorithm));
     this.loop = new ControlLoop(
-      new TetrisAICore(new PlySearch()),
+      this.core,
       this.context,
       () => this.actionDelayMs,
       (result) => this.onResult?.(result),
     );
+  }
+
+  setAlgorithm(algorithm: "ply" | "beam"): void {
+    if (this.algorithm === algorithm) return;
+    this.algorithm = algorithm;
+    this.core.setSearch(createSearch(algorithm));
+    this.resetPlan();
   }
 
   setEnabled(enabled: boolean): void {
@@ -58,6 +85,13 @@ export class AIPlayer {
   tick(now: number, adapter: TetrisGameAdapter): void {
     this.context.weights = this.weights;
     this.context.depth = this.depth;
+    this.context.beamWidth = this.beamWidth;
+    this.context.useHold = this.useHold;
+    this.context.mechanicsWeights = this.mechanicsWeights;
     this.loop.tick(now, this.enabled, adapter);
   }
+}
+
+function createSearch(algorithm: "ply" | "beam"): SearchAlgorithm {
+  return algorithm === "beam" ? new BeamSearch() : new PlySearch();
 }

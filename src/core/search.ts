@@ -1,13 +1,18 @@
 import { findBestMove } from "../ai/search";
-import type { EvalWeights, SearchDepth, SearchResult } from "../ai/types";
+import type { EvalWeights, SearchResult } from "../ai/types";
+import type { MechanicsWeights } from "../ai/weights";
 import type { TetrisGameState } from "./state";
 import type { Strategy } from "./strategy";
 import { IdentityStrategy } from "./strategy";
+import { BeamSearch } from "./beam";
 
 export interface SearchContext {
   weights: EvalWeights;
-  depth: SearchDepth;
+  depth: number;
   strategy?: Strategy;
+  beamWidth?: number;
+  useHold?: boolean;
+  mechanicsWeights?: MechanicsWeights;
 }
 
 export interface SearchAlgorithm {
@@ -29,23 +34,17 @@ export class PlySearch implements SearchAlgorithm {
         nodes: 0,
       };
     }
+    const ply = context.depth >= 2 ? 2 : 1;
     const raw = findBestMove(
       state.board,
       state.current.type,
       state.nextPieces[0] ?? null,
       context.weights,
-      context.depth,
+      ply,
     );
     const strategy = context.strategy ?? new IdentityStrategy();
     return strategy.rerank(raw, state);
   }
 }
 
-/** Reserved for a future beam / multi-ply implementation. */
-export class BeamSearch implements SearchAlgorithm {
-  readonly name = "beam";
-
-  search(state: TetrisGameState, context: SearchContext): SearchResult {
-    return new PlySearch().search(state, context);
-  }
-}
+export { BeamSearch };

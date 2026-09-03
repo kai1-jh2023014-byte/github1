@@ -8,8 +8,6 @@ export interface TetrisGameExtras {
   lines?: number;
   garbage?: number;
   incomingGarbage?: number;
-  combo?: number;
-  backToBack?: boolean;
   attack?: number;
   opponentBoard?: Board;
   lockDelayMs?: number;
@@ -23,6 +21,8 @@ export interface TetrisGameState {
   nextPieces: TetrominoType[];
   holdPiece: TetrominoType | null;
   canHold: boolean;
+  combo: number;
+  backToBack: boolean;
   phase: GamePhase;
   extras?: TetrisGameExtras;
 }

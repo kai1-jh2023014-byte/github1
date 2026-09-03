@@ -4,7 +4,7 @@ import { RecordingInputAdapter } from "../adapters/external/virtualPad";
 import { TetrisAICore } from "../core/ai";
 import { ControlLoop } from "../core/loop";
 import { planActions } from "../core/planner";
-import { PlySearch } from "../core/search";
+import { BeamSearch, PlySearch } from "../core/search";
 import { DEFAULT_WEIGHTS } from "../ai/weights";
 import { GameEngine } from "../game/engine";
 import { createPiece } from "../game/piece";
@@ -52,6 +52,38 @@ describe("Tetris AI Core", () => {
     }
     expect(acted).toBeGreaterThan(0);
     expect(engine.getSnapshot().score).toBeGreaterThan(0);
+  });
+
+  it("plans HOLD as a first-class action", () => {
+    const current = createPiece("T", 1);
+    expect(planActions(current, { hold: true, rotation: 1, x: 4, y: 18 })).toEqual([
+      { type: "hold" },
+    ]);
+  });
+
+  it("PlySearch never emits a hold move", () => {
+    const engine = new GameEngine();
+    engine.start();
+    const adapter = new BrowserGameAdapter(engine);
+    const core = new TetrisAICore(new PlySearch());
+    const planned = core.plan(adapter.getState(), { weights: DEFAULT_WEIGHTS, depth: 2 });
+    expect(planned.target?.hold).toBeFalsy();
+  });
+
+  it("BeamSearch considers hold branches on an empty hold", () => {
+    const engine = new GameEngine();
+    engine.start();
+    const adapter = new BrowserGameAdapter(engine);
+    const core = new TetrisAICore(new BeamSearch({ depth: 2, beamWidth: 8, useHold: true }));
+    const planned = core.plan(adapter.getState(), {
+      weights: DEFAULT_WEIGHTS,
+      depth: 2,
+      beamWidth: 8,
+      useHold: true,
+    });
+    expect(planned.target).not.toBeNull();
+    expect(planned.search.candidates.some((c) => c.placement.hold)).toBe(true);
+    expect(planned.search.nodes).toBeGreaterThan(0);
   });
 
   it("external recording adapter logs controller buttons", () => {
