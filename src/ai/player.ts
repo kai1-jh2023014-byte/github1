@@ -17,6 +17,7 @@ export interface AIPlayerOptions {
   algorithm?: "ply" | "beam";
   beamWidth?: number;
   useHold?: boolean;
+  holdAtRootOnly?: boolean;
   mechanicsWeights?: MechanicsWeights;
 }
 
@@ -28,6 +29,7 @@ export class AIPlayer {
   algorithm: "ply" | "beam";
   beamWidth: number;
   useHold: boolean;
+  holdAtRootOnly: boolean;
   mechanicsWeights: MechanicsWeights;
 
   private enabled = false;
@@ -42,7 +44,8 @@ export class AIPlayer {
     this.actionDelayMs = options.actionDelayMs ?? 55;
     this.onResult = options.onResult;
     this.beamWidth = options.beamWidth ?? DEFAULT_BEAM.beamWidth;
-    this.useHold = options.useHold ?? this.algorithm === "beam";
+    this.useHold = options.useHold ?? (this.algorithm === "beam" ? DEFAULT_BEAM.useHold : false);
+    this.holdAtRootOnly = options.holdAtRootOnly ?? true;
     this.mechanicsWeights =
       options.mechanicsWeights ?? (this.algorithm === "beam" ? DEFAULT_MECHANICS : { ...ZERO_MECHANICS });
     this.context = {
@@ -51,6 +54,7 @@ export class AIPlayer {
       strategy: new IdentityStrategy(),
       beamWidth: this.beamWidth,
       useHold: this.useHold,
+      holdAtRootOnly: this.holdAtRootOnly,
       mechanicsWeights: this.mechanicsWeights,
     };
     this.core = new TetrisAICore(createSearch(this.algorithm));
@@ -87,6 +91,7 @@ export class AIPlayer {
     this.context.depth = this.depth;
     this.context.beamWidth = this.beamWidth;
     this.context.useHold = this.useHold;
+    this.context.holdAtRootOnly = this.holdAtRootOnly;
     this.context.mechanicsWeights = this.mechanicsWeights;
     this.loop.tick(now, this.enabled, adapter);
   }

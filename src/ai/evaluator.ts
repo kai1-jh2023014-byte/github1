@@ -56,6 +56,7 @@ export function mechanicsScore(input: {
   backToBackAfter: boolean;
   perfectClear: boolean;
   holdType: TetrominoType | null;
+  usedHold: boolean;
   weights: MechanicsWeights;
 }): number {
   const w = input.weights;
@@ -66,6 +67,7 @@ export function mechanicsScore(input: {
   extra += w.backToBack * (input.backToBackAfter ? 1 : 0);
   extra += w.perfectClear * (input.perfectClear ? 1 : 0);
   extra += w.holdI * (input.holdType === "I" ? 1 : 0);
+  if (input.usedHold) extra -= w.holdPenalty;
   return extra;
 }
 

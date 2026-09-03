@@ -1,34 +1,55 @@
 # Architecture
 
 ```text
-                 ┌─────────────────┐
-                 │  Tetris AI Core │
-                 │  think / plan   │
-                 └────────┬────────┘
-                          │ GameState → PlannedMove / Action[]
-                ┌─────────┴─────────┐
-                │                   │
-                ▼                   ▼
-        Browser Adapter      External Adapter
-                │                   │
-                ▼                   ▼
-          GameEngine          Virtual controller
-                                  (recording PoC)
+Observe(GameState)
+    ↓
+Think(PlySearch | BeamSearch + Evaluator + Strategy)
+    ↓
+Plan(Action[])
+    ↓
+Act(Input Adapter)
+    ↓
+Game
 ```
 
-## Layers
+```text
+Browser Game
+    ↓
+Browser Adapter
+    ↓
+TetrisGameState
+    ↓
+Tetris AI Core
+    ↓
+TetrisAction
+    ↓
+Browser Adapter
+    ↓
+GameEngine.input()
+```
 
-1. **Board evaluation** (`src/ai/evaluator.ts`) — heuristic features and weights.
-2. **Search** (`src/core/search.ts`) — `PlySearch` today, `BeamSearch` stub for later.
-3. **Strategy** (`src/core/strategy.ts`) — `IdentityStrategy` now; T-spin / opener / garbage policies can rerank candidates later.
+## GameState
+
+`TetrisGameState` carries `board`, `current`, `nextPieces`, `holdPiece`, `canHold`, `combo` (REN), `backToBack`, and extras (score / lines / level).
+
+## Search
+
+- **PlySearch** — frozen 1-ply / 2-ply baseline (`findBestMove`). Does not hold. `DEFAULT_WEIGHTS` are unchanged.
+- **BeamSearch** — root-complete first ply (so depth 2 matches 2-ply), then top-K at deeper plies. Hold is a search branch (optional, default off). Spin placements feed T-spin detection.
+
+Default live search: Beam depth 3, width 12, hold off, mechanics weights on.
+
+## Candidate evaluation
+
+Board features stay on `DEFAULT_WEIGHTS`. Additive mechanics (`mechanicsScore`): T-spin, mini, REN, B2B, perfect clear, hold-I, hold penalty.
+
+## Mechanics (pure)
+
+`src/core/mechanics/` — `applyHold`, `detectTSpin`, `nextCombo`, `nextBackToBack`, `lockScore`. No React/DOM.
 
 ## Closed loop
 
-`ControlLoop` (`src/core/loop.ts`):
-
-Observe (`getState`) → Think (`search`) → Plan (`planActions`) → Act (`press`) → game → Observe.
-
-The browser AI still executes **one live action per tick** (rotate / shift / hard drop) so wall-kicks and gravity stay honest. The planned `Action[]` is available for adapters that fire a burst.
+`ControlLoop`: Observe → Think → Plan → Act. One live input per tick through `GameEngine.input()`. HOLD is a first-class action; after HOLD the falling piece id changes and the loop replans.
 
 ## What AI Core does not depend on
 

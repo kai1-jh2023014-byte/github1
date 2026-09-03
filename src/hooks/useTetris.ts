@@ -42,8 +42,8 @@ export function useTetris() {
   const [snapshot, setSnapshot] = useState<GameSnapshot>(EMPTY_SNAPSHOT);
   const [aiEnabled, setAiEnabled] = useState(true);
   const [debugEnabled, setDebugEnabled] = useState(true);
-  const [searchMode, setSearchMode] = useState<SearchMode>("ply");
-  const [searchDepth, setSearchDepth] = useState<SearchDepth>(2);
+  const [searchMode, setSearchMode] = useState<SearchMode>("beam");
+  const [searchDepth, setSearchDepth] = useState<SearchDepth>(DEFAULT_BEAM.depth);
   const [debug, setDebug] = useState<SearchResult | null>(null);
   const [weights] = useState(DEFAULT_WEIGHTS);
   const [vision, setVision] = useState<{
@@ -58,8 +58,11 @@ export function useTetris() {
     const adapter = new BrowserGameAdapter(engine);
     const ai = new AIPlayer({
       weights,
-      depth: 2,
-      algorithm: "ply",
+      depth: DEFAULT_BEAM.depth,
+      algorithm: "beam",
+      beamWidth: DEFAULT_BEAM.beamWidth,
+      useHold: false,
+      mechanicsWeights: DEFAULT_MECHANICS,
       onResult: (result) => setDebug(result),
     });
     ai.setEnabled(true);
@@ -92,13 +95,10 @@ export function useTetris() {
     if (!ai) return;
     ai.setAlgorithm(searchMode);
     if (searchMode === "beam") {
-      ai.depth = Math.max(searchDepth, DEFAULT_BEAM.depth);
+      ai.depth = DEFAULT_BEAM.depth;
       ai.beamWidth = DEFAULT_BEAM.beamWidth;
-      ai.useHold = true;
+      ai.useHold = false;
       ai.mechanicsWeights = DEFAULT_MECHANICS;
-      if (searchDepth < DEFAULT_BEAM.depth) {
-        ai.depth = DEFAULT_BEAM.depth;
-      }
     } else {
       ai.depth = searchDepth;
       ai.useHold = false;

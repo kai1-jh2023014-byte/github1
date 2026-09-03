@@ -12,6 +12,7 @@ export interface SearchSpec {
   depth: number;
   beamWidth?: number;
   useHold?: boolean;
+  holdAtRootOnly?: boolean;
   mechanicsWeights?: MechanicsWeights;
 }
 
@@ -53,6 +54,7 @@ export interface BenchmarkSummary {
   maxDecisionMs: number;
   averageNodes: number;
   averageHolds: number;
+  averageTetrises: number;
   averageTSpins: number;
   averageMaxCombo: number;
   averageB2B: number;
@@ -91,6 +93,7 @@ export function runGame(options: RunGameOptions): GameMetrics {
     algorithm: spec.algorithm,
     beamWidth: spec.beamWidth,
     useHold: spec.useHold ?? false,
+    holdAtRootOnly: spec.holdAtRootOnly,
     mechanicsWeights: spec.mechanicsWeights ?? ZERO_MECHANICS,
     actionDelayMs: 1,
     onResult: (result) => {
@@ -192,6 +195,7 @@ export function summarize(results: GameMetrics[], spec: SearchSpec): BenchmarkSu
     maxDecisionMs: latencies.length === 0 ? 0 : Math.max(...latencies),
     averageNodes: totalDecisions === 0 ? 0 : nodes / totalDecisions,
     averageHolds: results.reduce((sum, r) => sum + r.holds, 0) / games,
+    averageTetrises: results.reduce((sum, r) => sum + r.tetrises, 0) / games,
     averageTSpins: results.reduce((sum, r) => sum + r.tSpins, 0) / games,
     averageMaxCombo: results.reduce((sum, r) => sum + r.maxCombo, 0) / games,
     averageB2B: results.reduce((sum, r) => sum + r.b2bClears, 0) / games,
@@ -222,6 +226,7 @@ export function formatSummary(summary: BenchmarkSummary): string {
     `maxMs=${summary.maxDecisionMs.toFixed(3)}`,
     `avgNodes=${summary.averageNodes.toFixed(1)}`,
     `holds=${summary.averageHolds.toFixed(2)}`,
+    `tetrises=${summary.averageTetrises.toFixed(2)}`,
     `tSpins=${summary.averageTSpins.toFixed(2)}`,
     `ren=${summary.averageMaxCombo.toFixed(2)}`,
     `b2b=${summary.averageB2B.toFixed(2)}`,

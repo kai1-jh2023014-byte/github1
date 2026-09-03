@@ -12,6 +12,7 @@ export interface SearchContext {
   strategy?: Strategy;
   beamWidth?: number;
   useHold?: boolean;
+  holdAtRootOnly?: boolean;
   mechanicsWeights?: MechanicsWeights;
 }
 

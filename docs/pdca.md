@@ -1,25 +1,64 @@
 # PDCA
 
-## Cycle 1
+Previous adapter / vision cycles are summarized at the bottom.
 
-- **Hypothesis:** If AI talks only to `TetrisGameAdapter`, the browser engine can keep the same inputs and scores.
-- **Implementation:** `TetrisAICore`, `ControlLoop`, `BrowserGameAdapter`; `AIPlayer.tick` takes an adapter, not `GameEngine`.
-- **Measurement:** Existing engine/AI tests still pass. Closed-loop core test places pieces through the adapter. Benchmark (5 seeds, 40 pieces): 1-ply avg lines **13.80**, avg decision **0.66 ms**.
-- **Problem:** Core was still unproven on pixels and on a controller-shaped output.
-- **Improvement:** Add vision Observe PoC and a recording pad adapter.
+## Cycle 1 — Mechanics
 
-## Cycle 2
+- **PLAN:** Hold, T-spin detection, REN, and B2B in Core/Engine let search see future value without changing 2-ply semantics.
+- **DO:** `holdPiece` / `canHold`, `HOLD` action, 3-corner T-spin (`full` / `mini` / `none`; kick-table exceptions unsupported), combo reset, B2B on tetris/T-spin, benchmark stats.
+- **CHECK:** Hold cases A–D pass. 2-ply 5×40: **avg lines 14.80**, score 3651.6 (combo points vs older 3551.6), holds 0, t-spins 0, p50 ~16 ms. `DEFAULT_WEIGHTS` unchanged.
+- **ACT:** **PASS.** Baseline frozen. Mini vs full uses 3 vs 4 corners only.
 
-- **Hypothesis:** Sampling the lower-middle of each cell avoids highlight pixels and yields ~100% board recovery on our renderer.
-- **Implementation:** Pixel renderer matching cell colors; 5×5 average at (0.5, 0.62) inside each cell; nearest tetromino RGB.
-- **Measurement:** 1000 random boards → **200000 / 200000 cells correct (100%)**, avg detect **0.044 ms**. Floating piece split **200 / 200**.
-- **Problem:** A falling piece that already touches the stack merges with the grounded component (4-connected), so vision cannot always split it. NEXT is not on the matrix canvas.
-- **Improvement:** Keep engine adapter as the play observer; use vision as a parallel debug observer. Document the touch-stack limitation.
+## Cycle 2 — Search
 
-## Cycle 3
+- **PLAN:** Beam Search with hold branches beats 2-ply on long-horizon board quality.
+- **DO:** `BeamSearch` (depth × width), hold × placements, spin moves, node/latency metrics.
+- **CHECK (same seeds 1–5, 40 pieces):**
 
-- **Hypothesis:** When vision recovers board + current piece, 1-ply targets equal engine-state targets. 2-ply should beat 1-ply on the same seeds.
-- **Implementation:** Vision → `TetrisAICore.plan` vs ground-truth plan (50 cases). Benchmark 1-ply vs 2-ply.
-- **Measurement:** Decide match **50 / 50**. 2-ply: avg lines **14.80**, avg score **3551.6**, avg decision **16.2 ms** vs 1-ply **13.80 / 3215.2 / 0.66 ms** (same 5 seeds, 40 pieces).
-- **Problem:** T-spin / perfect-clear rates stay 0; evaluator does not look for them. 40-piece cap hides game-over rate.
-- **Improvement:** Keep default search at 2-ply. Leave T-spin / hold / beam search as Strategy/Search extension points. Do not change the live heuristic weights in this pass (behavior freeze).
+| Config | lines | score | p95 ms | holds |
+|---|---:|---:|---:|---:|
+| 2-ply | 14.80 | 3651.6 | ~18 | 0 |
+| beam 2×8 + hold | 10.00 | 2114 | ~14 | 12 |
+| beam 3×12 + hold | 10.20 | 2994 | ~38 | 12 |
+| beam 3×12 no hold (pruned root) | 14.80 | 3647 | ~16 | 0 |
+| beam 3×12 no hold (root-complete) | **15.00** | **3704** | ~35 | 0 |
+| beam 3×16 no hold (root-complete) | 14.80 | 3708 | ~38 | 0 |
+| beam 4×16 + hold | 10.00 | 4274 | ~72 | 12 |
+
+- **ACT:** Hold-as-equal-candidate over-holds and **loses lines**. Root-complete beam 3×12 without hold **beats 2-ply**. Width 16/32 and extra depth were not better. **PASS** for search; hold stays optional and default-off.
+
+## Cycle 3 — Strategy
+
+- **PLAN:** Mechanics + Hold + Beam together beat board-only 2-ply.
+- **DO:** Ablations: 2-ply, beam only, beam+hold, beam+mechanics. Hold penalty / root-only hold. `holdI` vs `holdPenalty`. Perfect-clear weight reduced (1.6 chased PCs and cut lines).
+- **CHECK:**
+
+| Protocol | 2-ply lines / score | Final beam 3×12+mech |
+|---|---|---|
+| 5 seeds × 40 | 14.80 / 3652 | **15.00 / 3704** |
+| 5 seeds × 100 | 38.40 / 14405 | **39.00 / 15521** |
+| 10 seeds × 100 | 38.40 / 14991 | **38.80 / 15617** |
+
+Hold (even strict penalty) stayed below 2-ply (13.8 / 35.8 lines). Latency p95 ~37 ms vs 2-ply ~19 ms; under the 55 ms action gap.
+
+- **ACT:** **PASS.** Final: BeamSearch depth 3, width 12, hold **off** (implemented, measured weaker), T-spin/REN/B2B weights **on**, root-complete first ply. Browser default is this config. 1-PLY / 2-PLY remain.
+
+## Regression
+
+`npm test` / `npm run build` / AI PLAYING path through `GameEngine.input()`.
+
+---
+
+## Earlier cycles (adapter / vision)
+
+### Cycle 1 (adapter)
+
+If AI talks only to `TetrisGameAdapter`, the browser engine keeps the same inputs. Closed-loop core test places pieces through the adapter.
+
+### Cycle 2 (vision)
+
+1000 random boards → 200000 / 200000 cells. Floating piece split 200 / 200.
+
+### Cycle 3 (vision vs 2-ply freeze)
+
+Vision decide match 50 / 50. Then 2-ply 14.80 lines vs 1-ply 13.80 on 5×40. Weights frozen.

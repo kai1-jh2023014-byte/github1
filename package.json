@@ -9,7 +9,7 @@
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "test": "vitest run",
     "bench": "vitest run src/bench/benchmark.test.ts",
-    "bench:pdca": "vitest run src/bench/pdca.bench.ts --testTimeout 180000"
+    "bench:pdca": "PDCA=1 vitest run src/bench/pdca.test.ts --testTimeout 180000"
   },
   "dependencies": {
     "react": "^18.3.1",

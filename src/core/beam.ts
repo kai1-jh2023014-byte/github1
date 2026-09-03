@@ -17,14 +17,16 @@ export interface BeamConfig {
   beamWidth: number;
   useHold: boolean;
   useSpins: boolean;
+  holdAtRootOnly: boolean;
   mechanics: MechanicsWeights;
 }
 
 export const DEFAULT_BEAM: BeamConfig = {
   depth: 3,
   beamWidth: 12,
-  useHold: true,
+  useHold: false,
   useSpins: true,
+  holdAtRootOnly: true,
   mechanics: DEFAULT_MECHANICS,
 };
 
@@ -59,6 +61,7 @@ export class BeamSearch implements SearchAlgorithm {
       beamWidth: Math.max(1, context.beamWidth ?? this.config.beamWidth),
       useHold: context.useHold ?? this.config.useHold,
       useSpins: this.config.useSpins,
+      holdAtRootOnly: context.holdAtRootOnly ?? this.config.holdAtRootOnly,
       mechanics: context.mechanicsWeights ?? this.config.mechanics ?? ZERO_MECHANICS,
     };
     const weights = context.weights;
@@ -81,7 +84,10 @@ export class BeamSearch implements SearchAlgorithm {
 
     const first = expand(origin, cfg, weights, true);
     nodes += first.nodes;
-    let beam = first.children.sort((a, b) => b.score - a.score).slice(0, cfg.beamWidth);
+    const firstSorted = first.children.sort((a, b) => b.score - a.score);
+    // Keep every root placement for the first deeper expand so depth 2
+    // matches 2-ply; prune only after that.
+    let beam = firstSorted;
 
     for (let depth = 1; depth < cfg.depth; depth++) {
       const next: Node[] = [];
@@ -159,6 +165,7 @@ function expand(
         backToBackAfter: b2bAfter,
         perfectClear: occupiedCount(placed.board) === 0,
         holdType: holdPiece,
+        usedHold: hold,
         weights: cfg.mechanics,
       });
       const pathMechanics = node.pathMechanics + extra;
@@ -183,7 +190,7 @@ function expand(
 
   pushPlacements(node.current, false, node.hold, node.nextQueue);
 
-  if (cfg.useHold && node.canHold) {
+  if (cfg.useHold && node.canHold && (isRoot || !cfg.holdAtRootOnly)) {
     const held = applyHold({
       current: node.current,
       hold: node.hold,

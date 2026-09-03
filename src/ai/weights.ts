@@ -20,6 +20,7 @@ export interface MechanicsWeights {
   backToBack: number;
   perfectClear: number;
   holdI: number;
+  holdPenalty: number;
 }
 
 export const ZERO_MECHANICS: MechanicsWeights = {
@@ -29,15 +30,17 @@ export const ZERO_MECHANICS: MechanicsWeights = {
   backToBack: 0,
   perfectClear: 0,
   holdI: 0,
+  holdPenalty: 0,
 };
 
 export const DEFAULT_MECHANICS: MechanicsWeights = {
-  tSpin: 0.85,
-  tSpinMini: 0.08,
-  combo: 0.12,
-  backToBack: 0.22,
-  perfectClear: 1.6,
-  holdI: 0.12,
+  tSpin: 0.55,
+  tSpinMini: 0.05,
+  combo: 0.10,
+  backToBack: 0.18,
+  perfectClear: 0.4,
+  holdI: 0.55,
+  holdPenalty: 0.45,
 };
 
 export function cloneWeights(weights: EvalWeights): EvalWeights {
