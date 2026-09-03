@@ -29,7 +29,7 @@ export class AIPlayer {
   constructor(options: AIPlayerOptions = {}) {
     this.weights = options.weights ?? { ...DEFAULT_WEIGHTS };
     this.depth = options.depth ?? 2;
-    this.actionDelayMs = options.actionDelayMs ?? 24;
+    this.actionDelayMs = options.actionDelayMs ?? 55;
     this.onResult = options.onResult;
   }
 
@@ -90,18 +90,10 @@ export class AIPlayer {
     this.accum += now - this.lastTime;
     this.lastTime = now;
 
-    let steps = 0;
-    while (
-      this.accum >= this.actionDelayMs &&
-      this.phase !== "idle" &&
-      steps < 16
-    ) {
-      this.accum -= this.actionDelayMs;
-      steps += 1;
-      const action = this.nextAction(engine);
-      if (!action) break;
-      engine.input(action);
-    }
+    if (this.accum < this.actionDelayMs || this.phase === "idle") return;
+    this.accum = 0;
+    const action = this.nextAction(engine);
+    if (action) engine.input(action);
   }
 
   private nextAction(engine: GameEngine): GameAction | null {

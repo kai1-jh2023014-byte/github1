@@ -122,11 +122,14 @@ export class GameEngine {
     this.lastTime = now;
     this.dropAccum += dt;
     const interval = dropIntervalMs(this.level);
+    if (this.dropAccum > interval * 2) this.dropAccum = interval * 2;
     let changed = false;
-    while (this.status === "playing" && this.dropAccum >= interval) {
+    let steps = 0;
+    while (this.status === "playing" && this.dropAccum >= interval && steps < 2) {
       this.dropAccum -= interval;
       this.gravity();
       changed = true;
+      steps += 1;
     }
     if (changed) this.notify();
   }
