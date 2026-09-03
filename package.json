@@ -1,0 +1,32 @@
+{
+  "name": "tetris-ai",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "tsc --noEmit -p tsconfig.app.json && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "test": "vitest run",
+    "bench": "vitest run src/bench/benchmark.test.ts",
+    "bench:pdca": "PDCA=1 vitest run src/bench/pdca.test.ts --testTimeout 180000",
+    "bench:phase2": "PHASE2=1 vitest run src/bench/phase2.test.ts --testTimeout 300000",
+    "bench:phase3": "PHASE3=1 vitest run src/bench/phase3.test.ts --testTimeout 420000",
+    "bench:phase4": "PHASE4=1 vitest run src/bench/phase4.test.ts --testTimeout 420000",
+    "bench:phase5": "PHASE5=1 vitest run src/bench/phase5.test.ts --testTimeout 900000",
+    "bench:final": "FINAL=1 vitest run src/bench/finalDepth.test.ts --testTimeout 900000",
+    "research": "vitest run src/research/research.test.ts --testTimeout 180000"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.3",
+    "vitest": "^2.1.8"
+  }
+}
