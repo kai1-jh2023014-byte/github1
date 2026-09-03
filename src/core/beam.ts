@@ -4,7 +4,7 @@ import type { Board, TetrominoType } from "../game/types";
 import { generateMoves, generateMovesWithSpins } from "../ai/moveGenerator";
 import { evaluateBoard, mechanicsScore } from "../ai/evaluator";
 import { shouldExploreHold } from "../ai/holdGate";
-import { overhangScore, wellReservationScore } from "../ai/structure";
+import { findTetrisWell, overhangScore, wellReservationFromWell, type TetrisWell } from "../ai/structure";
 import {
   ZERO_FUTURE,
   computeFutureFeatures,
@@ -13,6 +13,19 @@ import {
   type FutureActivations,
   type FutureWeights,
 } from "../ai/future";
+import {
+  ZERO_DELTA,
+  emptyDeltaActivations,
+  emptyDeltaBundle,
+  observeDelta,
+  scoreHoleDelta,
+  scoreSurfaceDelta,
+  scoreWellDelta,
+  wellQuality,
+  type DeltaActivations,
+  type DeltaBundle,
+  type DeltaWeights,
+} from "../ai/delta";
 import type { EvalWeights, Placement, ScoredCandidate, SearchResult } from "../ai/types";
 import { DEFAULT_MECHANICS, ZERO_MECHANICS } from "../ai/weights";
 import type { MechanicsWeights } from "../ai/weights";
@@ -33,6 +46,10 @@ export interface BeamConfig {
   tspinSetup: boolean;
   futureClear: boolean;
   futureWeights: FutureWeights;
+  wellDelta: boolean;
+  holeDelta: boolean;
+  surfaceDelta: boolean;
+  deltaWeights: DeltaWeights;
   useSpins: boolean;
   holdAtRootOnly: boolean;
   mechanics: MechanicsWeights;
@@ -49,6 +66,10 @@ export const DEFAULT_BEAM: BeamConfig = {
   tspinSetup: false,
   futureClear: false,
   futureWeights: ZERO_FUTURE,
+  wellDelta: false,
+  holeDelta: false,
+  surfaceDelta: false,
+  deltaWeights: ZERO_DELTA,
   useSpins: true,
   holdAtRootOnly: true,
   mechanics: DEFAULT_MECHANICS,
@@ -67,6 +88,8 @@ interface Node {
   score: number;
   rootMove: Placement;
   features: ScoredCandidate["features"];
+  heights: number[];
+  well: TetrisWell | null;
 }
 
 export class BeamSearch implements SearchAlgorithm {
@@ -91,6 +114,10 @@ export class BeamSearch implements SearchAlgorithm {
       tspinSetup: context.tspinSetup ?? this.config.tspinSetup,
       futureClear: context.futureClear ?? this.config.futureClear,
       futureWeights: context.futureWeights ?? this.config.futureWeights,
+      wellDelta: context.wellDelta ?? this.config.wellDelta,
+      holeDelta: context.holeDelta ?? this.config.holeDelta,
+      surfaceDelta: context.surfaceDelta ?? this.config.surfaceDelta,
+      deltaWeights: context.deltaWeights ?? this.config.deltaWeights,
       useSpins: this.config.useSpins,
       holdAtRootOnly: context.holdAtRootOnly ?? this.config.holdAtRootOnly,
       mechanics: context.mechanicsWeights ?? this.config.mechanics ?? ZERO_MECHANICS,
@@ -98,6 +125,10 @@ export class BeamSearch implements SearchAlgorithm {
     const weights = context.weights;
     let nodes = 0;
     const activations = emptyActivations();
+    const deltaActivations = emptyDeltaActivations();
+    const deltaDist = emptyDeltaBundle();
+    const originEval = evaluateBoard(state.board, 0, weights);
+    const needWell = cfg.wellReservation || cfg.wellDelta || cfg.surfaceDelta;
 
     const origin: Node = {
       board: state.board,
@@ -111,10 +142,12 @@ export class BeamSearch implements SearchAlgorithm {
       pathMechanics: 0,
       score: 0,
       rootMove: { rotation: 0, x: 0, y: 0 },
-      features: evaluateBoard(state.board, 0, weights).features,
+      features: originEval.features,
+      heights: originEval.heights,
+      well: needWell ? findTetrisWell(state.board, originEval.heights) : null,
     };
 
-    const first = expand(origin, cfg, weights, true, activations);
+    const first = expand(origin, cfg, weights, true, activations, deltaActivations, deltaDist);
     nodes += first.nodes;
     const firstSorted = first.children.sort((a, b) => b.score - a.score);
     // Keep every root placement for the first deeper expand so depth 2
@@ -125,7 +158,7 @@ export class BeamSearch implements SearchAlgorithm {
       const next: Node[] = [];
       const seen = new Set<string>();
       for (const node of beam) {
-        const expanded = expand(node, cfg, weights, false, activations);
+        const expanded = expand(node, cfg, weights, false, activations, deltaActivations, deltaDist);
         nodes += expanded.nodes;
         for (const child of expanded.children) {
           const key = stateKey(child);
@@ -162,6 +195,8 @@ export class BeamSearch implements SearchAlgorithm {
       depth: cfg.depth,
       nodes,
       activations,
+      deltaActivations,
+      deltaDist,
     };
     return (context.strategy ?? new IdentityStrategy()).rerank(raw, state);
   }
@@ -173,11 +208,17 @@ function expand(
   weights: EvalWeights,
   isRoot: boolean,
   activations: FutureActivations,
+  deltaActivations: DeltaActivations,
+  deltaDist: DeltaBundle,
 ): { children: Node[]; nodes: number } {
   if (!node.current) return { children: [], nodes: 0 };
   const children: Node[] = [];
   let nodes = 0;
   const generate = cfg.useSpins ? generateMovesWithSpins : generateMoves;
+  const needWell = cfg.wellReservation || cfg.wellDelta || cfg.surfaceDelta;
+  const parentQuality = wellQuality(node.well);
+  const parentWellCol = node.well?.col ?? -1;
+  const parentHoles = node.features.holes;
 
   const pushPlacements = (
     type: TetrominoType,
@@ -205,9 +246,16 @@ function expand(
       const pathMechanics = node.pathMechanics + extra;
       const boardEval = evaluateBoard(placed.board, pathLines, weights);
       const [nextCurrent, ...rest] = nextQueue;
+      const childWell = needWell ? findTetrisWell(placed.board, boardEval.heights) : null;
       let structure = 0;
       if (cfg.wellReservation) {
-        structure += wellReservationScore(placed.board, holdPiece, nextCurrent ?? null, rest);
+        structure += wellReservationFromWell(
+          childWell,
+          boardEval.heights,
+          holdPiece,
+          nextCurrent ?? null,
+          rest,
+        );
       }
       if (cfg.surfaceOverhang) {
         structure += overhangScore(placed.board);
@@ -223,6 +271,32 @@ function expand(
         activations.tspin += future.activations.tspin;
         activations.clear += future.activations.clear;
       }
+      if (cfg.wellDelta) {
+        let wellDelta = scoreWellDelta(parentQuality, wellQuality(childWell), cfg.deltaWeights);
+        // Filling the reserved well for a tetris is the point of reservation.
+        if (placed.cleared >= 4 && wellDelta < 0) wellDelta = 0;
+        structure += wellDelta;
+        observeDelta(deltaDist.well, wellDelta);
+        if (wellDelta !== 0) deltaActivations.well += 1;
+      }
+      if (cfg.holeDelta) {
+        const holeDelta = scoreHoleDelta(parentHoles, boardEval.features.holes, cfg.deltaWeights);
+        structure += holeDelta;
+        observeDelta(deltaDist.hole, holeDelta);
+        if (holeDelta !== 0) deltaActivations.hole += 1;
+      }
+      if (cfg.surfaceDelta) {
+        const surfaceDelta = scoreSurfaceDelta(
+          node.heights,
+          boardEval.heights,
+          cfg.deltaWeights,
+          parentWellCol,
+          childWell?.col ?? -1,
+        );
+        structure += surfaceDelta;
+        observeDelta(deltaDist.surface, surfaceDelta);
+        if (surfaceDelta !== 0) deltaActivations.surface += 1;
+      }
       children.push({
         board: placed.board,
         current: nextCurrent ?? null,
@@ -236,6 +310,8 @@ function expand(
         score: boardEval.score + pathMechanics + structure,
         rootMove: isRoot ? { ...move.placement, hold } : node.rootMove,
         features: boardEval.features,
+        heights: boardEval.heights,
+        well: childWell,
       });
     }
   };
@@ -291,6 +367,8 @@ function emptyResult(depth: number): SearchResult {
     depth,
     nodes: 0,
     activations: emptyActivations(),
+    deltaActivations: emptyDeltaActivations(),
+    deltaDist: emptyDeltaBundle(),
   };
 }
 

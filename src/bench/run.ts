@@ -3,6 +3,8 @@ import { AIPlayer } from "../ai/player";
 import type { SearchDepth } from "../ai/types";
 import type { MechanicsWeights } from "../ai/weights";
 import type { FutureWeights } from "../ai/future";
+import type { DeltaDist, DeltaWeights } from "../ai/delta";
+import { emptyDeltaDist, mergeDeltaDist } from "../ai/delta";
 import { ZERO_MECHANICS } from "../ai/weights";
 import { GameEngine } from "../game/engine";
 import { seededRandomizer } from "../game/seeded";
@@ -22,6 +24,10 @@ export interface SearchSpec {
   tspinSetup?: boolean;
   futureClear?: boolean;
   futureWeights?: FutureWeights;
+  wellDelta?: boolean;
+  holeDelta?: boolean;
+  surfaceDelta?: boolean;
+  deltaWeights?: DeltaWeights;
 }
 
 export interface GameMetrics {
@@ -46,6 +52,12 @@ export interface GameMetrics {
   activationsSetup: number;
   activationsTspin: number;
   activationsClear: number;
+  activationsWellDelta: number;
+  activationsHoleDelta: number;
+  activationsSurfaceDelta: number;
+  deltaWell: DeltaDist;
+  deltaHole: DeltaDist;
+  deltaSurface: DeltaDist;
 }
 
 export interface BenchmarkSummary {
@@ -73,6 +85,12 @@ export interface BenchmarkSummary {
   averageActivationsSetup: number;
   averageActivationsTspin: number;
   averageActivationsClear: number;
+  averageActivationsWellDelta: number;
+  averageActivationsHoleDelta: number;
+  averageActivationsSurfaceDelta: number;
+  deltaWell: DeltaDist;
+  deltaHole: DeltaDist;
+  deltaSurface: DeltaDist;
   results: GameMetrics[];
 }
 
@@ -105,6 +123,12 @@ export function runGame(options: RunGameOptions): GameMetrics {
   let activationsSetup = 0;
   let activationsTspin = 0;
   let activationsClear = 0;
+  let activationsWellDelta = 0;
+  let activationsHoleDelta = 0;
+  let activationsSurfaceDelta = 0;
+  const deltaWell = emptyDeltaDist();
+  const deltaHole = emptyDeltaDist();
+  const deltaSurface = emptyDeltaDist();
   const ai = new AIPlayer({
     depth: spec.depth,
     algorithm: spec.algorithm,
@@ -119,6 +143,10 @@ export function runGame(options: RunGameOptions): GameMetrics {
     tspinSetup: spec.tspinSetup ?? false,
     futureClear: spec.futureClear ?? false,
     futureWeights: spec.futureWeights,
+    wellDelta: spec.wellDelta ?? false,
+    holeDelta: spec.holeDelta ?? false,
+    surfaceDelta: spec.surfaceDelta ?? false,
+    deltaWeights: spec.deltaWeights,
     actionDelayMs: 1,
     onResult: (result) => {
       latencies.push(result.elapsedMs);
@@ -126,6 +154,14 @@ export function runGame(options: RunGameOptions): GameMetrics {
       activationsSetup += result.activations?.setup ?? 0;
       activationsTspin += result.activations?.tspin ?? 0;
       activationsClear += result.activations?.clear ?? 0;
+      activationsWellDelta += result.deltaActivations?.well ?? 0;
+      activationsHoleDelta += result.deltaActivations?.hole ?? 0;
+      activationsSurfaceDelta += result.deltaActivations?.surface ?? 0;
+      if (result.deltaDist) {
+        mergeDeltaDist(deltaWell, result.deltaDist.well);
+        mergeDeltaDist(deltaHole, result.deltaDist.hole);
+        mergeDeltaDist(deltaSurface, result.deltaDist.surface);
+      }
     },
   });
   ai.setEnabled(true);
@@ -172,6 +208,12 @@ export function runGame(options: RunGameOptions): GameMetrics {
     activationsSetup,
     activationsTspin,
     activationsClear,
+    activationsWellDelta,
+    activationsHoleDelta,
+    activationsSurfaceDelta,
+    deltaWell,
+    deltaHole,
+    deltaSurface,
   };
 }
 
@@ -236,8 +278,23 @@ export function summarize(results: GameMetrics[], spec: SearchSpec): BenchmarkSu
       totalDecisions === 0 ? 0 : results.reduce((sum, r) => sum + r.activationsTspin, 0) / totalDecisions,
     averageActivationsClear:
       totalDecisions === 0 ? 0 : results.reduce((sum, r) => sum + r.activationsClear, 0) / totalDecisions,
+    averageActivationsWellDelta:
+      totalDecisions === 0 ? 0 : results.reduce((sum, r) => sum + r.activationsWellDelta, 0) / totalDecisions,
+    averageActivationsHoleDelta:
+      totalDecisions === 0 ? 0 : results.reduce((sum, r) => sum + r.activationsHoleDelta, 0) / totalDecisions,
+    averageActivationsSurfaceDelta:
+      totalDecisions === 0 ? 0 : results.reduce((sum, r) => sum + r.activationsSurfaceDelta, 0) / totalDecisions,
+    deltaWell: mergeAll(results.map((r) => r.deltaWell)),
+    deltaHole: mergeAll(results.map((r) => r.deltaHole)),
+    deltaSurface: mergeAll(results.map((r) => r.deltaSurface)),
     results,
   };
+}
+
+function mergeAll(parts: DeltaDist[]): DeltaDist {
+  const into = emptyDeltaDist();
+  for (const part of parts) mergeDeltaDist(into, part);
+  return into;
 }
 
 export function percentile(values: number[], p: number): number {
@@ -270,5 +327,8 @@ export function formatSummary(summary: BenchmarkSummary): string {
     `actSetup=${summary.averageActivationsSetup.toFixed(1)}`,
     `actTspin=${summary.averageActivationsTspin.toFixed(1)}`,
     `actClear=${summary.averageActivationsClear.toFixed(1)}`,
+    `actWellD=${summary.averageActivationsWellDelta.toFixed(1)}`,
+    `actHoleD=${summary.averageActivationsHoleDelta.toFixed(1)}`,
+    `actSurfD=${summary.averageActivationsSurfaceDelta.toFixed(1)}`,
   ].join(" ");
 }

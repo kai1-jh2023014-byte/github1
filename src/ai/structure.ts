@@ -15,17 +15,17 @@ export interface TetrisWell {
  * A 1-wide well with solid walls, no holes in the well column.
  * Depth is capped in scoring — deeper is not automatically better.
  */
-export function findTetrisWell(board: Board): TetrisWell | null {
-  const heights = columnHeights(board);
+export function findTetrisWell(board: Board, heights?: number[]): TetrisWell | null {
+  const h = heights ?? columnHeights(board);
   let best: TetrisWell | null = null;
   for (let x = 0; x < COLS; x++) {
-    const left = x === 0 ? ROWS : heights[x - 1]!;
-    const right = x === COLS - 1 ? ROWS : heights[x + 1]!;
-    if (left <= heights[x]! || right <= heights[x]!) continue;
-    const depth = Math.min(left, right) - heights[x]!;
+    const left = x === 0 ? ROWS : h[x - 1]!;
+    const right = x === COLS - 1 ? ROWS : h[x + 1]!;
+    if (left <= h[x]! || right <= h[x]!) continue;
+    const depth = Math.min(left, right) - h[x]!;
     if (depth < 3) continue;
-    if (columnHasHole(board, x, heights[x]!)) continue;
-    if (isTwoWide(heights, x)) continue;
+    if (columnHasHole(board, x, h[x]!)) continue;
+    if (isTwoWide(h, x)) continue;
     if (!best || depth > best.depth) best = { col: x, depth };
   }
   return best;
@@ -72,15 +72,14 @@ export function canITetris(board: Board): boolean {
  * Partially offsets the existing wells *penalty* for a qualifying 1-wide well
  * so Beam does not fill it for a single. Depth past 6 is not rewarded more.
  */
-export function wellReservationScore(
-  board: Board,
+export function wellReservationFromWell(
+  well: TetrisWell | null,
+  heights: number[],
   hold: TetrominoType | null,
   nextCurrent: TetrominoType | null,
   nextQueue: TetrominoType[],
 ): number {
-  const well = findTetrisWell(board);
   if (!well) return 0;
-  const heights = columnHeights(board);
   const maxHeight = heights.reduce((max, h) => Math.max(max, h), 0);
 
   const triangular = (well.depth * (well.depth + 1)) / 2;
@@ -107,6 +106,16 @@ export function wellReservationScore(
   }
 
   return offset + shape + iValue;
+}
+
+export function wellReservationScore(
+  board: Board,
+  hold: TetrominoType | null,
+  nextCurrent: TetrominoType | null,
+  nextQueue: TetrominoType[],
+): number {
+  const heights = columnHeights(board);
+  return wellReservationFromWell(findTetrisWell(board, heights), heights, hold, nextCurrent, nextQueue);
 }
 
 /** Covered adjacent empties — not just |h[i]-h[i+1]|. */

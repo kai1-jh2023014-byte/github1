@@ -12,6 +12,7 @@
     "bench:pdca": "PDCA=1 vitest run src/bench/pdca.test.ts --testTimeout 180000",
     "bench:phase2": "PHASE2=1 vitest run src/bench/phase2.test.ts --testTimeout 300000",
     "bench:phase3": "PHASE3=1 vitest run src/bench/phase3.test.ts --testTimeout 420000",
+    "bench:phase4": "PHASE4=1 vitest run src/bench/phase4.test.ts --testTimeout 420000",
     "research": "vitest run src/research/research.test.ts --testTimeout 180000"
   },
   "dependencies": {

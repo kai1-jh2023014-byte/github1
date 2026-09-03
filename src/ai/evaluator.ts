@@ -4,7 +4,10 @@ import type { Board, TetrominoType } from "../game/types";
 import type { EvalFeatures, EvalWeights } from "./types";
 import type { MechanicsWeights } from "./weights";
 
-export function computeFeatures(board: Board, linesCleared: number): EvalFeatures {
+export function computeBoardStats(
+  board: Board,
+  linesCleared: number,
+): { features: EvalFeatures; heights: number[] } {
   const heights = columnHeights(board);
   const aggregateHeight = heights.reduce((sum, h) => sum + h, 0);
   const maxHeight = heights.reduce((max, h) => Math.max(max, h), 0);
@@ -14,16 +17,23 @@ export function computeFeatures(board: Board, linesCleared: number): EvalFeature
   }
 
   return {
-    linesCleared,
-    holes: countHoles(board, heights),
-    aggregateHeight,
-    bumpiness,
-    maxHeight,
-    wells: wellScore(heights),
-    density: stackDensity(board, maxHeight),
-    rowTransitions: rowTransitions(board),
-    colTransitions: colTransitions(board),
+    heights,
+    features: {
+      linesCleared,
+      holes: countHoles(board, heights),
+      aggregateHeight,
+      bumpiness,
+      maxHeight,
+      wells: wellScore(heights),
+      density: stackDensity(board, maxHeight),
+      rowTransitions: rowTransitions(board),
+      colTransitions: colTransitions(board),
+    },
   };
+}
+
+export function computeFeatures(board: Board, linesCleared: number): EvalFeatures {
+  return computeBoardStats(board, linesCleared).features;
 }
 
 export function scoreFeatures(features: EvalFeatures, weights: EvalWeights): number {
@@ -44,9 +54,9 @@ export function evaluateBoard(
   board: Board,
   linesCleared: number,
   weights: EvalWeights,
-): { score: number; features: EvalFeatures } {
-  const features = computeFeatures(board, linesCleared);
-  return { score: scoreFeatures(features, weights), features };
+): { score: number; features: EvalFeatures; heights: number[] } {
+  const { features, heights } = computeBoardStats(board, linesCleared);
+  return { score: scoreFeatures(features, weights), features, heights };
 }
 
 export function mechanicsScore(input: {

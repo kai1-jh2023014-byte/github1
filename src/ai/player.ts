@@ -2,6 +2,7 @@ import { DEFAULT_WEIGHTS, DEFAULT_MECHANICS, ZERO_MECHANICS } from "./weights";
 import type { EvalWeights, SearchResult } from "./types";
 import type { MechanicsWeights } from "./weights";
 import type { FutureWeights } from "./future";
+import type { DeltaWeights } from "./delta";
 import type { TetrisGameAdapter } from "../core/adapters";
 import { ControlLoop } from "../core/loop";
 import { TetrisAICore } from "../core/ai";
@@ -27,6 +28,10 @@ export interface AIPlayerOptions {
   tspinSetup?: boolean;
   futureClear?: boolean;
   futureWeights?: FutureWeights;
+  wellDelta?: boolean;
+  holeDelta?: boolean;
+  surfaceDelta?: boolean;
+  deltaWeights?: DeltaWeights;
 }
 
 export class AIPlayer {
@@ -46,6 +51,10 @@ export class AIPlayer {
   tspinSetup: boolean;
   futureClear: boolean;
   futureWeights: FutureWeights;
+  wellDelta: boolean;
+  holeDelta: boolean;
+  surfaceDelta: boolean;
+  deltaWeights: DeltaWeights;
 
   private enabled = false;
   private readonly context: SearchContext;
@@ -72,6 +81,10 @@ export class AIPlayer {
     this.tspinSetup = options.tspinSetup ?? (this.algorithm === "beam" ? DEFAULT_BEAM.tspinSetup : false);
     this.futureClear = options.futureClear ?? (this.algorithm === "beam" ? DEFAULT_BEAM.futureClear : false);
     this.futureWeights = options.futureWeights ?? DEFAULT_BEAM.futureWeights;
+    this.wellDelta = options.wellDelta ?? (this.algorithm === "beam" ? DEFAULT_BEAM.wellDelta : false);
+    this.holeDelta = options.holeDelta ?? (this.algorithm === "beam" ? DEFAULT_BEAM.holeDelta : false);
+    this.surfaceDelta = options.surfaceDelta ?? (this.algorithm === "beam" ? DEFAULT_BEAM.surfaceDelta : false);
+    this.deltaWeights = options.deltaWeights ?? DEFAULT_BEAM.deltaWeights;
     this.context = {
       weights: this.weights,
       depth: this.depth,
@@ -87,6 +100,10 @@ export class AIPlayer {
       tspinSetup: this.tspinSetup,
       futureClear: this.futureClear,
       futureWeights: this.futureWeights,
+      wellDelta: this.wellDelta,
+      holeDelta: this.holeDelta,
+      surfaceDelta: this.surfaceDelta,
+      deltaWeights: this.deltaWeights,
     };
     this.core = new TetrisAICore(createSearch(this.algorithm));
     this.loop = new ControlLoop(
@@ -131,6 +148,10 @@ export class AIPlayer {
     this.context.tspinSetup = this.tspinSetup;
     this.context.futureClear = this.futureClear;
     this.context.futureWeights = this.futureWeights;
+    this.context.wellDelta = this.wellDelta;
+    this.context.holeDelta = this.holeDelta;
+    this.context.surfaceDelta = this.surfaceDelta;
+    this.context.deltaWeights = this.deltaWeights;
     this.loop.tick(now, this.enabled, adapter);
   }
 }

@@ -1,3 +1,5 @@
+import type { DeltaActivations, DeltaBundle } from "./delta";
+
 export interface EvalWeights {
   linesCleared: number;
   holes: number;
@@ -46,6 +48,8 @@ export interface SearchResult {
   depth: SearchDepth;
   nodes: number;
   activations?: { setup: number; tspin: number; clear: number };
+  deltaActivations?: DeltaActivations;
+  deltaDist?: DeltaBundle;
 }
 
 export const FEATURE_KEYS: (keyof EvalFeatures)[] = [

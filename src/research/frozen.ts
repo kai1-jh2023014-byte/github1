@@ -28,6 +28,9 @@ export function frozenSearchContext(): SearchContext {
     futureSetup: false,
     tspinSetup: false,
     futureClear: false,
+    wellDelta: false,
+    holeDelta: false,
+    surfaceDelta: false,
   };
 }
 

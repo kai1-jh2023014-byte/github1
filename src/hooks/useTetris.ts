@@ -69,6 +69,10 @@ export function useTetris() {
       tspinSetup: DEFAULT_BEAM.tspinSetup,
       futureClear: DEFAULT_BEAM.futureClear,
       futureWeights: DEFAULT_BEAM.futureWeights,
+      wellDelta: DEFAULT_BEAM.wellDelta,
+      holeDelta: DEFAULT_BEAM.holeDelta,
+      surfaceDelta: DEFAULT_BEAM.surfaceDelta,
+      deltaWeights: DEFAULT_BEAM.deltaWeights,
       mechanicsWeights: DEFAULT_MECHANICS,
       onResult: (result) => setDebug(result),
     });
@@ -112,6 +116,10 @@ export function useTetris() {
       ai.tspinSetup = DEFAULT_BEAM.tspinSetup;
       ai.futureClear = DEFAULT_BEAM.futureClear;
       ai.futureWeights = DEFAULT_BEAM.futureWeights;
+      ai.wellDelta = DEFAULT_BEAM.wellDelta;
+      ai.holeDelta = DEFAULT_BEAM.holeDelta;
+      ai.surfaceDelta = DEFAULT_BEAM.surfaceDelta;
+      ai.deltaWeights = DEFAULT_BEAM.deltaWeights;
       ai.mechanicsWeights = DEFAULT_MECHANICS;
     } else {
       ai.depth = searchDepth;
@@ -122,6 +130,9 @@ export function useTetris() {
       ai.futureSetup = false;
       ai.tspinSetup = false;
       ai.futureClear = false;
+      ai.wellDelta = false;
+      ai.holeDelta = false;
+      ai.surfaceDelta = false;
       ai.mechanicsWeights = ZERO_MECHANICS;
     }
     ai.resetPlan();

@@ -2,6 +2,7 @@ import { findBestMove } from "../ai/search";
 import type { EvalWeights, SearchResult } from "../ai/types";
 import type { MechanicsWeights } from "../ai/weights";
 import type { FutureWeights } from "../ai/future";
+import type { DeltaWeights } from "../ai/delta";
 import type { TetrisGameState } from "./state";
 import type { Strategy } from "./strategy";
 import { IdentityStrategy } from "./strategy";
@@ -22,6 +23,10 @@ export interface SearchContext {
   tspinSetup?: boolean;
   futureClear?: boolean;
   futureWeights?: FutureWeights;
+  wellDelta?: boolean;
+  holeDelta?: boolean;
+  surfaceDelta?: boolean;
+  deltaWeights?: DeltaWeights;
 }
 
 export interface SearchAlgorithm {
